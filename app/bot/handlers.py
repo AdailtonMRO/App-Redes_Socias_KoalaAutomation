@@ -149,14 +149,26 @@ async def handle_perfis(bot, chat_id: int):
 LATEST_RADAR_OPPORTUNITIES: Dict[str, Any] = {}
 
 
-async def handle_radar(bot, chat_id: int):
+async def handle_radar(bot, chat_id: int, refresh: bool = False):
     """Executa a varredura proativa do Content Radar e envia o briefing matinal com botões de ação."""
+    if refresh:
+        wait_msg = (
+            "🔄 *ATUALIZANDO RADAR DE NOTÍCIAS...*\n\n"
+            "Buscando novos artigos em *TenisBrasil, Tenis News, ge.globo, ESPN, WTA e CBT*...\n"
+            "O Google Gemini está gerando oportunidades inéditas sem repetir as anteriores!\n"
+            "_(Aguarde alguns instantes)_"
+        )
+    else:
+        wait_msg = (
+            "📡 *ATIVANDO CONTENT RADAR...*\n\n"
+            "Varrendo *TenisBrasil, Tenis News, Diário do Tênis, ge.globo, ESPN, WTA, CBT e ATP*...\n"
+            "O Google Gemini está avaliando as oportunidades para o universo *Koala Tênis* e *Máquina DIY*...\n"
+            "_(Aguarde alguns instantes)_"
+        )
+
     await bot.send_message(
         chat_id,
-        "📡 *ATIVANDO CONTENT RADAR...*\n\n"
-        "Varrendo Google Trends, Circuito ATP, Regulamentos ITF e Notícias de Biomecânica.\n"
-        "O Google Gemini está avaliando as oportunidades para o universo *Koala Tênis* e *Máquina DIY*...\n"
-        "_(Aguarde alguns instantes)_",
+        wait_msg,
         parse_mode="Markdown",
     )
 
@@ -167,7 +179,7 @@ async def handle_radar(bot, chat_id: int):
     profile_data = profiles[0] if profiles else None
 
     try:
-        report = await radar.run_daily_radar(profile_data=profile_data, top_k=4)
+        report = await radar.run_daily_radar(profile_data=profile_data, top_k=4, refresh=refresh)
 
         # Salva em memória para permitir clique em qualquer oportunidade
         keyboard_buttons = []
@@ -177,7 +189,7 @@ async def handle_radar(bot, chat_id: int):
             keyboard_buttons.append([{"text": btn_title, "callback_data": f"radar_create_{opp.id}"}])
 
         keyboard_buttons.append([
-            {"text": "🔄 Atualizar Radar", "callback_data": "menu_radar"},
+            {"text": "🔄 Atualizar Notícias", "callback_data": "menu_radar_refresh"},
             {"text": "⬅️ Menu Principal", "callback_data": "menu_start"},
         ])
 
@@ -359,7 +371,9 @@ async def handle_callback_query(bot, query: Dict[str, Any]):
     elif data == "menu_perfis":
         await handle_perfis(bot, chat_id)
     elif data == "menu_radar":
-        await handle_radar(bot, chat_id)
+        await handle_radar(bot, chat_id, refresh=False)
+    elif data == "menu_radar_refresh":
+        await handle_radar(bot, chat_id, refresh=True)
 
     # Disparo de criação a partir do Radar de Conteúdo
     elif data.startswith("radar_create_"):
@@ -369,9 +383,9 @@ async def handle_callback_query(bot, query: Dict[str, Any]):
         profile_id = profiles[0].get("id") if profiles else "koalatenis"
 
         if opp:
-            topic_with_angle = f"{opp.headline}: {opp.diy_ball_machine_angle}"
-            fmt = opp.suggested_format or "REELS"
-            await generate_and_send_content(bot, chat_id, profile_id, topic=topic_with_angle, content_format=fmt)
+            topic = f"{opp.headline}. Resumo: {opp.news_summary}"
+            fmt = "STORIES"
+            await generate_and_send_content(bot, chat_id, profile_id, topic=topic, content_format=fmt)
         else:
             await bot.send_message(
                 chat_id,

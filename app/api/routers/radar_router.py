@@ -19,6 +19,7 @@ radar = ContentRadar()
 async def get_daily_radar(
     profile_id: Optional[str] = Query(None, description="ID do perfil de referência"),
     top_k: int = Query(5, ge=1, le=10, description="Quantidade de oportunidades a retornar"),
+    refresh: bool = Query(False, description="Forçar rotação anti-repetição de notícias"),
 ):
     """Retorna o briefing diário consolidado com as melhores oportunidades de conteúdo."""
     profile_data = None
@@ -31,19 +32,20 @@ async def get_daily_radar(
         if profiles:
             profile_data = profiles[0]
 
-    report = await radar.run_daily_radar(profile_data=profile_data, top_k=top_k)
+    report = await radar.run_daily_radar(profile_data=profile_data, top_k=top_k, refresh=refresh)
     return report
 
 
 @router.post("/scan")
 async def trigger_radar_scan(
     notify_telegram: bool = Query(True, description="Se deve enviar o briefing matinal no Telegram"),
+    refresh: bool = Query(False, description="Forçar rotação anti-repetição"),
 ):
-    """Dispara a varredura sob demanda de todas as fontes externas (Google Trends, ATP, ITF, Notícias)."""
+    """Dispara a varredura sob demanda de todas as fontes externas especializadas."""
     profiles = profile_manager.list_profiles()
     profile_data = profiles[0] if profiles else None
 
-    report = await radar.run_daily_radar(profile_data=profile_data, top_k=5)
+    report = await radar.run_daily_radar(profile_data=profile_data, top_k=5, refresh=refresh)
 
     if notify_telegram:
         from app.bot.telegram_bot import get_telegram_bot
@@ -59,7 +61,7 @@ async def trigger_radar_scan(
                     keyboard_buttons.append([{"text": btn_title, "callback_data": f"radar_create_{opp.id}"}])
 
                 keyboard_buttons.append([
-                    {"text": "🔄 Atualizar Radar", "callback_data": "menu_radar"},
+                    {"text": "🔄 Atualizar Notícias", "callback_data": "menu_radar_refresh"},
                     {"text": "⬅️ Menu Principal", "callback_data": "menu_start"},
                 ])
 

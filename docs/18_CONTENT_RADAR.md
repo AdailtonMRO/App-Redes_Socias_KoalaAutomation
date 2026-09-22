@@ -1,20 +1,22 @@
 # 📡 Content Radar — Motor Proativo de Inteligência de Conteúdo
 
 > **Documento Técnico:** `docs/18_CONTENT_RADAR.md`  
-> **Versão:** 1.0.0  
+> **Versão:** 1.4.0  
 > **Status:** Ativo / Homologado
 
 ---
 
 ## 1. Visão Geral e Objetivo de Negócio
 
-O **Content Radar** é o módulo de inteligência proativa do sistema. Em vez de depender apenas de temas inseridos manualmente pelo operador, o Radar atua como um jornalista esportivo e diretor de arte automatizado:
+O **Content Radar** é o motor de inteligência e curadoria jornalística automatizada do ecossistema Koala Automation. Ele monitora em tempo real portais dedicados de tênis, grandes canais de esportes e fontes oficiais do esporte para alimentar a esteira de criação:
 
-1. **Monitora fontes externas** (Trends, Circuito Profissional ATP/ITF e Notícias técnicas).
+1. **Monitora 7 provedores de dados independentes** (TenisBrasil, Tenis News, Diário do Tênis, ge.globo, ESPN Brasil, UOL, WTA, CBT, ATP, ITF e Google Trends).
 2. **Normaliza os achados** em um contrato padrão de dados (`ResearchItem`).
-3. **Filtra e pontua através do Gemini** cruzando as notícias com o DNA do perfil.
-4. **Cria a ponte de conversão DIY:** O foco central do perfil `@koalatenis_` é **fazer com que o praticante monte sua própria máquina lançadora de bolas**. Assim, as notícias e dados de performance funcionam como atrativo de topo de funil para educar e incentivar a construção da máquina.
-5. **Notifica o operador via Telegram** com briefing matinal e botões interativos de ação direta (`[CRIAR REEL]`).
+3. **Aplica memória dinâmica anti-repetição** para que atualizações e requisições consecutivas (`/radar`) sempre tragam conteúdos frescos e variados.
+4. **Filtra e estrutura através do Gemini** extraindo a manchete magnética, resumo informativo e pontos-chave esportivos.
+5. **Gera Stories Verticais Estáticos (9:16):** As matérias selecionadas são convertidas diretamente em imagens de Story de alto impacto visual (1080x1920) com card central de resumo e a **logomarca oficial do perfil posicionada no canto inferior direito**.
+6. **Notifica o operador via Telegram** com briefing matinal e botões interativos de ação direta (`[NOTÍCIA 1..4]`, `[🔄 Atualizar Notícias]`).
+
 
 ---
 
@@ -23,45 +25,53 @@ O **Content Radar** é o módulo de inteligência proativa do sistema. Em vez de
 Nenhuma fonte externa fica acoplada ao núcleo do sistema. Todas as fontes herdam da interface abstrata `SourceAdapter` e produzem objetos normalizados `ResearchItem`.
 
 ```text
-                    CONTENT RADAR (radar.py)
-                               │
-             ┌─────────────────┼─────────────────┐
-             ↓                 ↓                 ↓
-     GoogleTrendsAdapter   ATPAdapter        ITFAdapter / NewsAdapter
-      (pytrends + RSS)     (Feed RSS)        (Feed RSS / Google News)
-             │                 │                 │
-             └─────────────────┼─────────────────┘
-                               ↓
-                   NORMALIZAÇÃO (ResearchItem)
-                               ↓
-                  OPPORTUNITY SCORER (Gemini)
-                 (Ângulo Tênis -> Máquina DIY)
-                               ↓
-                    TELEGRAM BRIEFING MATINAL
+                            CONTENT RADAR (radar.py)
+                                        │
+      ┌─────────────────────────────────┼─────────────────────────────────┐
+      ↓                                 ↓                                 ↓
+BrazilianTennisAdapter          SportsPortalsAdapter               WTAAndCBTAdapter
+(TenisBrasil, TenisNews,         (ge.globo, ESPN Brasil,           (WTA, Bia Haddad,
+ Diário do Tênis - Feeds)         UOL Esporte - RSS)                CBT, Juvenis)
+      │                                 │                                 │
+      ├─────────────────────────────────┼─────────────────────────────────┤
+      ↓                                 ↓                                 ↓
+ NewsAdapter                       ATPAdapter / ITFAdapter          GoogleTrendsAdapter
+(Google News Aberto)              (ATP Tour / ITF Tennis)          (pytrends + RSS)
+      │                                 │                                 │
+      └─────────────────────────────────┼─────────────────────────────────┘
+                                        ↓
+                       NORMALIZAÇÃO & ANTI-SPAM (ResearchItem)
+                                        ↓
+                      MEMÓRIA ANTI-REPETIÇÃO DINÂMICA
+                                        ↓
+                         OPPORTUNITY SCORER (Gemini)
+                        (Ângulo Tênis -> Máquina DIY)
+                                        ↓
+                         TELEGRAM BRIEFING INTERATIVO
 ```
 
 ---
 
 ## 3. Contrato de Dados Normalizado (`ResearchItem`)
 
-Independentemente de a notícia vir do Google Trends, de um feed RSS da ATP ou do Google News, ela é convertida neste schema unificado:
+Independentemente de a notícia vir do Google Trends, do TenisBrasil, do ge.globo ou da ATP, ela é convertida neste schema unificado:
 
 ```json
 {
   "id": "uuid4",
-  "source_name": "ATP",
-  "source_type": "official",
-  "title": "Lehecka upsets Shelton; Rune wins return in Davis Cup",
-  "url": "https://www.atptour.com/en/news/...",
+  "source_name": "TenisBrasil (UOL)",
+  "source_type": "specialized_news",
+  "title": "João Fonseca supera rodada e acelera forehand a 160km/h",
+  "url": "https://tenisbrasil.uol.com.br/...",
   "summary": "Resumo do acontecimento ou métrica de tendência...",
   "published_at": "2026-09-22T10:00:00Z",
   "collected_at": "2026-09-22T11:00:00Z",
-  "language": "en",
-  "country": "US",
-  "topics": ["tennis", "davis-cup", "atp"],
+  "language": "pt",
+  "country": "BR",
+  "topics": ["tennis", "joao_fonseca", "treinamento"],
   "raw_metrics": {
-    "trend_value": 100,
-    "growth_rate": "+150%"
+    "source_weight": 1.2,
+    "outlet": "TenisBrasil (UOL)"
   }
 }
 ```
@@ -72,11 +82,15 @@ Independentemente de a notícia vir do Google Trends, de um feed RSS da ATP ou d
 
 Seguindo a regra de **não inventar endpoints fictícios**, todas as fontes foram testadas e validadas:
 
-| Fonte | Provedor Principal | Método de Acesso | Fallback Resiliente |
+| Fonte | Provedor | Método de Acesso | Cobertura |
 | :--- | :--- | :--- | :--- |
-| **Google Trends** | `GoogleTrendsAdapter` | `pytrends` (queries em alta, volume temporal, termos relacionados) | RSS oficial de tendências (`https://trends.google.com/trending/rss?geo=BR`) |
-| **ATP Tour** | `ATPAdapter` | Feed RSS oficial indexado via Google News (`site:atptour.com`) | Cache local de últimas notícias |
-| **ITF Tennis** | `ITFAdapter` | Feed RSS de regulamentos e torneios (`site:itftennis.com`) | Cache local |
+| **Portais Especializados BR** | `BrazilianTennisAdapter` | Feeds RSS nativos (TenisBrasil UOL, Tenis News, Diário do Tênis) | Circuito nacional, ATP/WTA, ranking de brasileiros e bastidores |
+| **Grandes Portais de Esportes** | `SportsPortalsAdapter` | Google News RSS direcionado (`site:ge.globo.com`, `site:espn.com.br`, `site:uol.com.br/esporte`) | Repercussão em massa, transmissões e grandes reportagens |
+| **WTA & CBT** | `WTAAndCBTAdapter` | Google News RSS segmentado | Tênis feminino (Bia Haddad, Stefani), base juvenil e Copa Davis |
+| **Notícias Amplas** | `NewsAdapter` | Google News RSS dinâmico | Biomecânica, tecnologia de raquetes e treinamento esportivo |
+| **Google Trends** | `GoogleTrendsAdapter` | `pytrends` + RSS oficial de tendências | Buscas em alta no Brasil e termos em ascensão |
+| **ATP Tour** | `ATPAdapter` | Feed RSS de circuito | Resultados e estatísticas da ATP |
+| **ITF Tennis** | `ITFAdapter` | Feed RSS de regulamentos e torneios | Circuito de transição e juvenil mundial |
 | **News / Tech / DIY** | `NewsAdapter` | RSS estruturado segmentado em: *tennis ball machine*, *tennis training*, *tennis robotics* | RSS esportivo geral |
 
 ---

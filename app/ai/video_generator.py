@@ -17,7 +17,7 @@ class VideoGeneratorService:
     def __init__(self, api_key: Optional[str] = None):
         self.settings = get_settings()
         self.api_key = api_key or self.settings.GEMINI_API_KEY
-        self.veo_model = self.settings.VEO_VIDEO_MODEL or "veo-2.0-generate-001"
+        self.veo_model = self.settings.VEO_VIDEO_MODEL or "veo-3.1-lite-generate-preview"
         self.processor = FFmpegProcessor()
         self.data_dir = Path(self.settings.DATA_DIR)
         self.videos_dir = self.data_dir / "videos"
@@ -51,7 +51,7 @@ class VideoGeneratorService:
             if telegram_notifier and chat_id:
                 await telegram_notifier.send_message(
                     chat_id,
-                    "🎬 *Conectando ao modelo Google Veo 2.0...*\nIniciando geração de cenas cinematográficas com IA.",
+                    "🎬 *Conectando ao modelo Google Veo 3.1 Lite...*\nIniciando geração de cenas cinematográficas com IA.",
                     parse_mode="Markdown",
                 )
 
@@ -63,8 +63,8 @@ class VideoGeneratorService:
                     "success": True,
                     "video_path": video_path,
                     "thumbnail_path": str(thumb_path),
-                    "duration": veo_result.get("duration", 15),
-                    "engine": "google-veo-2.0",
+                    "duration": veo_result.get("duration", 4),
+                    "engine": "google-veo-3.1-lite",
                 }
             else:
                 # Registra o motivo retornado pela Google
@@ -73,13 +73,13 @@ class VideoGeneratorService:
                 if telegram_notifier and chat_id:
                     await telegram_notifier.send_message(
                         chat_id,
-                        f"⚠️ *Aviso da Google AI:* {error_msg}\n_(O Veo exige faturamento ativado no Google Cloud)._\n\n"
+                        f"⚠️ *Aviso da Google AI:* {error_msg}\n\n"
                         f"🎞️ Ativando o **Cinema Motion Engine** com animação dinâmica 9:16 e transições...",
                         parse_mode="Markdown",
                     )
 
         # 2. Cinema Motion Engine: Gera vídeo vertical com movimento dinâmico, partículas e tipografia cinética
-        total_duration = sum(s.get("duration", 5) for s in scenes) or 15
+        total_duration = sum(s.get("duration", 4) for s in scenes) or 10
         success = self._generate_kinetic_cinema_reel(
             output_path=str(final_video_path),
             title=title,
@@ -120,8 +120,7 @@ class VideoGeneratorService:
             "instances": [{"prompt": visual_prompt}],
             "parameters": {
                 "aspectRatio": "9:16",
-                "durationSeconds": 5,
-                "personGeneration": "allow_adult",
+                "durationSeconds": 4,
             },
         }
 
@@ -153,17 +152,19 @@ class VideoGeneratorService:
                     if poll_data.get("done", False):
                         # Operação concluída: extrai o vídeo
                         response_part = poll_data.get("response", {})
-                        video_uri = response_part.get("generateVideoResponse", {}).get("generatedSamples", [{}])[0].get("video", {}).get("uri")
+                        samples = response_part.get("generateVideoResponse", {}).get("generatedSamples", [])
+                        video_uri = samples[0].get("video", {}).get("uri") if samples else None
                         
                         if video_uri:
-                            # Baixa o vídeo gerado
+                            # Baixa o vídeo gerado autenticado com a API Key
+                            dl_url = f"{video_uri}&key={self.api_key}" if "key=" not in video_uri else video_uri
                             dest_path = self.videos_dir / f"reel_{content_id}.mp4"
                             async with httpx.AsyncClient(timeout=60.0) as dl_client:
-                                dl_resp = await dl_client.get(video_uri)
+                                dl_resp = await dl_client.get(dl_url)
                                 if dl_resp.status_code == 200:
                                     with open(dest_path, "wb") as f:
                                         f.write(dl_resp.content)
-                                    return {"success": True, "video_path": str(dest_path), "duration": 5}
+                                    return {"success": True, "video_path": str(dest_path), "duration": 4}
 
                         return {"success": False, "error": "Operação Veo concluída mas sem URI de download"}
 
@@ -200,12 +201,6 @@ class VideoGeneratorService:
         clean_brand = brand_name.replace("'", "")[:25]
         has_logo = logo_path and Path(logo_path).exists()
 
-        cmd = [self.processor.ffmpeg_cmd, "-y"]
-        audio_src = "anullsrc=r=44100:cl=stereo"
-        cmd.extend(["-f", "lavfi", "-i", audio_src])
-
-        if has_logo:
-            cmd.extend(["-i", str(logo_path)])
 
         if has_logo:
             filter_complex = (
@@ -231,6 +226,7 @@ class VideoGeneratorService:
                 f"drawtext=text='Toque duas vezes se concorda ❤️':fontcolor=0xfbbf24:fontsize=34:x=(w-text_w)/2:y=1740"
             )
 
+        audio_src = "anullsrc=r=44100:cl=stereo"
         cmd = [self.processor.ffmpeg_cmd, "-y", "-f", "lavfi", "-i", audio_src]
 
         if has_logo:

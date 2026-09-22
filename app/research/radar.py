@@ -1,7 +1,9 @@
 """
 Orquestrador Central do Content Radar.
-Coordena a varredura paralela em múltiplos provedores desacoplados,
-consolida os dados normalizados e gera o briefing de oportunidades com o Gemini.
+Coordena a varredura paralela em múltiplos provedores desacoplados (TenisBrasil,
+Tenis News, Diário do Tênis, ge.globo, ESPN, WTA, CBT, ATP, ITF e Google Trends),
+consolida os dados normalizados, aplica rotação anti-repetição e gera o briefing de
+oportunidades lapidadas com o Google Gemini.
 """
 import asyncio
 from datetime import datetime
@@ -12,14 +14,21 @@ from app.research.models import ResearchItem, ContentOpportunity, RadarDailyRepo
 from app.research.content_opportunities import ContentOpportunityScorer
 from app.research.verification import ItemVerifier
 from app.research.scoring import ResearchScorer
+from app.research.adapters.brazilian_tennis import BrazilianTennisAdapter
+from app.research.adapters.sports_portals import SportsPortalsAdapter
+from app.research.adapters.wta_cbt import WTAAndCBTAdapter
+from app.research.adapters.news import NewsAdapter
 from app.research.adapters.google_trends import GoogleTrendsAdapter
 from app.research.adapters.atp import ATPAdapter
 from app.research.adapters.itf import ITFAdapter
-from app.research.adapters.news import NewsAdapter
+
+# Memória de rotação para evitar repetição entre atualizações sucessivas
+_RECENT_HEADLINES_MEMORY: List[str] = []
+_MAX_MEMORY_ITEMS = 30
 
 
 class ContentRadar:
-    """Orquestrador do Radar de Conteúdo."""
+    """Orquestrador do Radar de Conteúdo Multi-Fontes."""
 
     def __init__(
         self,
@@ -27,21 +36,24 @@ class ContentRadar:
         scorer: Optional[ContentOpportunityScorer] = None,
     ):
         self.adapters = adapters or [
-            GoogleTrendsAdapter(),
+            BrazilianTennisAdapter(),
+            SportsPortalsAdapter(),
+            WTAAndCBTAdapter(),
+            NewsAdapter(),
             ATPAdapter(),
             ITFAdapter(),
-            NewsAdapter(),
+            GoogleTrendsAdapter(),
         ]
         self.scorer = scorer or ContentOpportunityScorer()
 
     async def scan_all_sources(
         self,
         keywords: Optional[List[str]] = None,
-        limit_per_source: int = 5,
+        limit_per_source: int = 6,
         geo: str = "BR",
         language: str = "pt",
     ) -> List[ResearchItem]:
-        """Varre todas as fontes cadastradas concorrentemente de forma segura."""
+        """Varre todas as fontes cadastradas concorrentemente de forma resiliente."""
         tasks = []
         for adapter in self.adapters:
             if adapter.is_available():
@@ -80,28 +92,47 @@ class ContentRadar:
     async def run_daily_radar(
         self,
         profile_data: Optional[Dict[str, Any]] = None,
-        top_k: int = 5,
+        top_k: int = 4,
+        refresh: bool = False,
     ) -> RadarDailyReport:
         """
-        Executa o pipeline completo do Radar:
-        1. Coleta itens das fontes
-        2. Normaliza e deduplica
-        3. Passa pelo filtro Gemini com ângulo de conversão DIY
-        4. Monta o relatório diário
+        Executa o pipeline completo do Radar com anti-repetição dinâmica:
+        1. Coleta itens das 7 fontes especializadas e portais nacionais
+        2. Deduplica e sanitiza
+        3. Passa pelo filtro Gemini com histórico de exclusão de temas recentes
+        4. Monta o relatório diário e atualiza o histórico de memória
         """
         today_str = datetime.now().strftime("%d/%m/%Y")
-        raw_items = await self.scan_all_sources(limit_per_source=4)
+        raw_items = await self.scan_all_sources(limit_per_source=6)
+
+        # Passa histórico recente para evitar repetição
+        avoid_list = list(_RECENT_HEADLINES_MEMORY) if refresh else None
 
         opportunities = await self.scorer.score_and_filter(
             items=raw_items,
             profile_data=profile_data,
             top_k=top_k,
+            avoid_headlines=avoid_list,
+            force_refresh=refresh,
         )
+
+        # Atualiza memória de manchetes recentes
+        for opp in opportunities:
+            if opp.headline and opp.headline not in _RECENT_HEADLINES_MEMORY:
+                _RECENT_HEADLINES_MEMORY.append(opp.headline)
+        while len(_RECENT_HEADLINES_MEMORY) > _MAX_MEMORY_ITEMS:
+            _RECENT_HEADLINES_MEMORY.pop(0)
 
         featured = opportunities[0] if opportunities else None
 
         # Monta mensagem formatada para o Telegram
-        summary_msg = self.format_telegram_briefing(today_str, len(raw_items), opportunities, featured)
+        summary_msg = self.format_telegram_briefing(
+            date_str=today_str,
+            total_scanned=len(raw_items),
+            opportunities=opportunities,
+            featured=featured,
+            is_refresh=refresh,
+        )
 
         return RadarDailyReport(
             date=today_str,
@@ -117,34 +148,41 @@ class ContentRadar:
         total_scanned: int,
         opportunities: List[ContentOpportunity],
         featured: Optional[ContentOpportunity],
+        is_refresh: bool = False,
     ) -> str:
         """Gera o texto com formatação rica para o Telegram."""
+        title_header = "🔄 *RADAR ATUALIZADO*" if is_refresh else f"🎾 *RADAR KOALA — {date_str}*"
         lines = [
-            f"🎾 *RADAR KOALA — {date_str}*",
-            f"Varri as fontes oficiais (ATP, ITF, Trends e Notícias) e localizei *{total_scanned} acontecimentos* relevantes.",
+            title_header,
+            f"Varri os portais especializados (*TenisBrasil, Tenis News, ge.globo, ESPN, WTA, CBT, ATP*) e localizei *{total_scanned} notícias e tendências em tempo real*.",
             "",
-            "📊 *Resumo das Oportunidades Selecionadas:*",
+            "📊 *Notícias e Oportunidades para Stories:*",
         ]
 
         for idx, opp in enumerate(opportunities[:4], 1):
-            lines.append(f"{idx}. {opp.pillar} — *{opp.headline}*")
+            src = f" ({opp.source_reference})" if opp.source_reference else ""
+            lines.append(f"{idx}. {opp.pillar} — *{opp.headline}*{src}")
 
         if featured:
             lines.extend([
                 "",
-                "💡 *SUGESTÃO DE DESTAQUE PARA HOJE:*",
-                f"🎬 *\"{featured.headline}\"*",
+                "💡 *NOTÍCIA DE DESTAQUE PARA O STORY:*",
+                f"📱 *\"{featured.headline}\"*",
                 f"• *Pilar:* {featured.pillar}",
-                f"• *Formato Ideal:* `{featured.suggested_format}` (Score: {featured.relevance_score}/10)",
+                f"• *Formato:* `Story (Imagem 9:16)` (Score: {featured.relevance_score}/10)",
                 f"• *Origem:* {featured.source_reference}",
                 "",
-                "🎯 *Ângulo Koala (Ponte para a Máquina DIY):*",
-                f"_{featured.diy_ball_machine_angle}_",
+                "📝 *Resumo do Assunto Pesquisado:*",
+                f"_{featured.news_summary}_",
             ])
+            if featured.key_takeaway:
+                lines.extend([
+                    f"🎯 *Ponto Central:* _{featured.key_takeaway}_",
+                ])
 
         lines.extend([
             "",
-            "Toque no botão abaixo para gerar o roteiro e a mídia automaticamente!",
+            "Toque no botão de qualquer notícia abaixo para gerar o Story 9:16 com a logomarca do perfil!",
         ])
 
         return "\n".join(lines)

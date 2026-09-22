@@ -6,43 +6,54 @@ Atribui pesos aos itens com base na proximidade com o universo Koala Tênis
 from typing import List
 from app.research.models import ResearchItem
 
-# Dicionário de pesos por nicho temático
+# Dicionário de pesos calibrados para Notícias e Destaques do Tênis
 NICHE_WEIGHTS = {
-    # Nível 4: Direto ao objetivo (DIY Máquina Lançadora)
-    "maquina de bola": 15,
-    "maquina de bolas": 15,
-    "ball machine": 15,
-    "diy": 12,
-    "motor": 10,
-    "rpm": 10,
-    "impressao 3d": 10,
-    "engenharia": 8,
-    "lancador": 10,
-    # Nível 3: Treinamento & Biomecânica (Ponte direta)
-    "repeticao": 9,
+    # Nível 4: Astros e Destaques do Tênis Brasileiro (Prioridade Máxima)
+    "joao fonseca": 16,
+    "fonseca": 14,
+    "bia haddad": 16,
+    "haddad": 14,
+    "luisa stefani": 15,
+    "stefani": 13,
+    "thiago wild": 13,
+    "monteiro": 13,
+    "cbt": 12,
+    "copa davis": 14,
+    "davis cup": 14,
+    "billie jean king": 12,
+    "juvenil": 10,
+    # Nível 3: Astros Mundiais & Grandes Torneios
+    "alcaraz": 14,
+    "sinner": 14,
+    "djokovic": 14,
+    "grand slam": 13,
+    "wimbledon": 13,
+    "roland garros": 13,
+    "us open": 13,
+    "australian open": 13,
+    "atp": 12,
+    "wta": 12,
+    "itf": 10,
+    # Nível 2: Desfechos Competitivos e Rankings
+    "campeao": 10,
+    "titulo": 10,
+    "final": 10,
+    "vence": 9,
+    "vitoria": 9,
+    "ranking": 9,
+    "recorde": 9,
+    # Nível 1: Técnica, Biomecânica e Equipamentos
+    "saque": 8,
+    "forehand": 8,
+    "backhand": 8,
+    "voleio": 8,
     "treino": 8,
-    "treinamento": 8,
-    "saque": 7,
-    "forehand": 7,
-    "backhand": 7,
     "biomecanica": 8,
-    "drills": 7,
-    "consistencia": 6,
-    # Nível 2: Tecnologia & Equipamentos
-    "raquete": 5,
-    "cordas": 5,
-    "velocidade": 6,
-    "sensor": 6,
-    "tecnologia": 5,
-    # Nível 1: Circuito Profissional (Topo de funil)
-    "atp": 4,
-    "wta": 3,
-    "itf": 4,
-    "alcaraz": 4,
-    "sinner": 4,
-    "djokovic": 4,
-    "grand slam": 3,
+    "raquete": 7,
+    "cordas": 6,
+    "velocidade": 7,
 }
+
 
 
 class ResearchScorer:

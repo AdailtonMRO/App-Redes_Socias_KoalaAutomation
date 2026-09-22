@@ -70,7 +70,17 @@ class ContentOrchestrator:
             script_data = gemini_res.get("data", {})
 
             # 3. Processamento de Mídia por Formato
-            logo_path = profile.logo_path if (profile and profile.logo_path and Path(profile.logo_path).exists()) else None
+            logo_path = None
+            if profile and profile.logo_path:
+                cand = Path(profile.logo_path)
+                if not cand.is_absolute():
+                    cand = Path(settings.BASE_DIR) / cand
+                if cand.exists():
+                    logo_path = str(cand)
+            if not logo_path:
+                default_cand = Path(settings.BASE_DIR) / "profiles" / "koalatenis_logo.png"
+                if default_cand.exists():
+                    logo_path = str(default_cand)
 
             if fmt == "CAROUSEL":
                 # --- FORMATO CARROSSEL (SLIDES 1:1) ---
@@ -98,25 +108,25 @@ class ContentOrchestrator:
                         prompt=v_prompt,
                         aspect_ratio="1:1",
                         output_path=bg_path,
-                        keywords="tennis,racket,court",
+                        keywords=f"tennis,tutorial,slide_{slide_num}",
                     )
 
+                    # Sobrepõe layout institucional via FFmpeg
                     self.ffmpeg.generate_square_slide_image(
                         output_path=slide_path,
-                        headline=s.get("slide_title", f"Slide {slide_num}"),
-                        body_text=s.get("slide_body", ""),
+                        headline=s.get("slide_title") or s.get("title", f"Passo {slide_num}"),
+                        body_text=s.get("slide_body") or s.get("body", ""),
                         slide_num=slide_num,
                         total_slides=total_slides,
                         brand_name=profile.name,
                         background_image=bg_path,
                         logo_path=logo_path,
                     )
-                    if Path(slide_path).exists():
-                        slide_paths.append(slide_path)
+                    slide_paths.append(slide_path)
 
                 script_data["slide_paths"] = slide_paths
-                content.script = json.dumps(script_data, ensure_ascii=False)
                 content.thumbnail_path = slide_paths[0] if slide_paths else None
+                content.script = json.dumps(script_data, ensure_ascii=False)
                 content.status = ContentStatus.WAITING_APPROVAL
                 db.commit()
 
@@ -156,29 +166,33 @@ class ContentOrchestrator:
 
             elif fmt == "STORIES":
                 # --- FORMATO STORIES (9:16) ---
-                content.title = script_data.get("title", f"Story: {topic}")
-                content.caption = script_data.get("body", "")
+                content.title = script_data.get("title", f"Story: {topic[:40]}")
+                content.caption = script_data.get("body") or script_data.get("summary") or ""
                 content.hashtags = json.dumps([])
                 content.status = ContentStatus.PROCESSING_VIDEO
                 db.commit()
 
                 story_path = str(self.media_base_dir / f"story_{content_id}.jpg")
                 bg_story_path = str(self.media_base_dir / f"bg_story_{content_id}.jpg")
-                v_prompt = script_data.get("visual_prompt") or f"{topic}, vertical 9:16 tennis lifestyle"
+                v_prompt = script_data.get("visual_prompt") or f"{topic}, vertical 9:16 tennis court championship action"
 
                 # Gera imagem vertical temática com IA
                 await self.gemini.generate_image(
                     prompt=v_prompt,
                     aspect_ratio="9:16",
                     output_path=bg_story_path,
-                    keywords="tennis,court,lifestyle",
+                    keywords="tennis,court,championship,action",
                 )
+
+                hook_text = script_data.get("hook") or script_data.get("headline") or script_data.get("title") or topic
+                body_text = script_data.get("body") or script_data.get("summary") or script_data.get("news_summary") or topic
+                cta_text = script_data.get("call_to_action") or profile.cta or "Deixe seu comentário!"
 
                 self.ffmpeg.generate_story_vertical_image(
                     output_path=story_path,
-                    hook=script_data.get("hook", topic),
-                    body_text=script_data.get("body", ""),
-                    cta=script_data.get("call_to_action", profile.cta),
+                    hook=hook_text,
+                    body_text=body_text,
+                    cta=cta_text,
                     brand_name=profile.name,
                     background_image=bg_story_path,
                     logo_path=logo_path,

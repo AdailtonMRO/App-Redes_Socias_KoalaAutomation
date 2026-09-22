@@ -48,23 +48,24 @@ def test_item_verifier_filters_spam():
 
 
 def test_research_scorer_affinity():
-    """Valida que itens relacionados a máquinas e treino recebem maior pontuação."""
-    machine_item = ResearchItem(
-        source_name="News",
-        source_type="news",
-        title="Como regular o motor e RPM de uma máquina de bolas de tênis DIY",
+    """Valida que notícias de astros brasileiros e grandes torneios recebem maior pontuação."""
+    star_item = ResearchItem(
+        source_name="TenisBrasil",
+        source_type="specialized_news",
+        title="João Fonseca supera rodada e crava forehand com grande vitória",
     )
     generic_item = ResearchItem(
-        source_name="ATP",
-        source_type="official",
-        title="Jogador descansa antes do próximo torneio",
+        source_name="Blog",
+        source_type="news",
+        title="Clube realiza manutenção de quadras no feriado",
     )
 
-    score_machine = ResearchScorer.calculate_item_score(machine_item)
+    score_star = ResearchScorer.calculate_item_score(star_item)
     score_generic = ResearchScorer.calculate_item_score(generic_item)
 
-    assert score_machine > score_generic
-    assert score_machine >= 35.0  # Pontuação acumulada pelos pesos DIY
+    assert score_star > score_generic
+    assert score_star >= 30.0
+
 
 
 def test_api_radar_daily_endpoint():
@@ -76,3 +77,47 @@ def test_api_radar_daily_endpoint():
     assert "total_scanned" in data
     assert "top_opportunities" in data
     assert isinstance(data["top_opportunities"], list)
+
+
+def test_new_brazilian_adapters_registered():
+    """Valida que todos os novos adapters especializados estão integrados."""
+    from app.research.radar import ContentRadar
+    from app.research.adapters.brazilian_tennis import BrazilianTennisAdapter
+    from app.research.adapters.sports_portals import SportsPortalsAdapter
+    from app.research.adapters.wta_cbt import WTAAndCBTAdapter
+
+    radar = ContentRadar()
+    adapter_types = [type(a) for a in radar.adapters]
+
+    assert BrazilianTennisAdapter in adapter_types
+    assert SportsPortalsAdapter in adapter_types
+    assert WTAAndCBTAdapter in adapter_types
+    assert len(radar.adapters) >= 7
+
+
+def test_api_radar_daily_refresh_param():
+    """Valida que o endpoint aceita o parâmetro refresh."""
+    resp = client.get("/api/radar/daily?top_k=2&refresh=true")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "top_opportunities" in data
+
+
+def test_content_opportunity_schema_stories():
+    """Valida que o ContentOpportunity tem formato STORIES e campos de resumo sem máquina de bolas."""
+    opp = ContentOpportunity(
+        headline="João Fonseca brilha com forehand de 160km/h",
+        theme="Destaque Brasileiro",
+        source_reference="TenisBrasil (UOL)",
+        pillar="🇧🇷 Brasil no Circuito",
+        relevance_score=9,
+        news_summary="O brasileiro dominou os pontos de fundo e venceu com autoridade.",
+        key_takeaway="Consolidação no top 100 mundial.",
+        why_it_matters="Alta relevância esportiva.",
+    )
+    assert opp.suggested_format == "STORIES"
+    assert opp.news_summary is not None
+    dump = opp.model_dump()
+    assert "diy_ball_machine_angle" not in dump
+
+

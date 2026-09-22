@@ -11,8 +11,10 @@ O Google Gemini é responsável por atuar como o estrategista criativo da automa
 ---
 
 ## 2. Modelos Homologados
-- **`gemini-2.5-flash`** *(Padrão Recomendado)*: Altíssima velocidade de inferência (2 a 4 segundos), excelente aderência a JSON estruturado e custo mínimo.
-- **`gemini-2.5-pro`**: Modelo com maior capacidade de raciocínio, indicado para campanhas mais complexas.
+- **`gemini-3.6-flash`** *(Padrão Recomendado)*: Altíssima velocidade de inferência (1 a 3 segundos), total aderência a JSON estruturado tipado.
+- **`gemini-3.1-flash-lite`**: Modelo ultra econômico para otimização de prompts e tarefas de alta escala.
+- **`gemini-3.1-flash-lite-image`**: Geração de imagens fotográficas 1K com suporte a `responseModalities: ["IMAGE"]`.
+- **`veo-3.1-lite-generate-preview`**: Geração de vídeos cinematográficos 9:16 nativos (4 a 8 segundos).
 
 ---
 

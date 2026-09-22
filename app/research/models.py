@@ -48,12 +48,16 @@ class ContentOpportunity(BaseModel):
         description="Pilar temático (🎾 Tênis Profissional, 🧠 Aprendizado, ⚙️ Tecnologia, 🔧 DIY/Engenharia, 🔥 Trends, 😂 Leve)",
     )
     relevance_score: int = Field(..., ge=1, le=10, description="Nota de relevância estratégica (1 a 10)")
-    diy_ball_machine_angle: str = Field(
+    news_summary: str = Field(
         ...,
-        description="Ponte estratégica conectando este assunto com a montagem ou uso da máquina lançadora de bolas DIY",
+        description="Resumo claro, factual e informativo da matéria para exibição no Story",
     )
-    suggested_format: str = Field(default="REELS", description="Formato recomendado: REELS, STORIES, FEED ou CAROUSEL")
-    why_it_matters: str = Field(..., description="Por que este assunto atrai o público e converte tenistas amadores")
+    key_takeaway: str = Field(
+        default="",
+        description="Ponto principal de destaque ou impacto no circuito do tênis",
+    )
+    suggested_format: str = Field(default="STORIES", description="Formato recomendado: STORIES, FEED, CAROUSEL ou REELS")
+    why_it_matters: str = Field(..., description="Por que este assunto atrai o público tenista")
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 

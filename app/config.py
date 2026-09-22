@@ -26,8 +26,8 @@ class Settings(BaseSettings):
 
     # Google AI Studio (Gemini & Veo)
     GEMINI_API_KEY: Optional[str] = None
-    GEMINI_TEXT_MODEL: str = "gemini-2.5-flash"
-    VEO_VIDEO_MODEL: str = "veo-2.0-generate-001"
+    GEMINI_TEXT_MODEL: str = "gemini-3-flash-preview"
+    VEO_VIDEO_MODEL: str = "veo-3.1-lite-generate-preview"
 
     # Meta Graph API (Instagram)
     INSTAGRAM_APP_ID: Optional[str] = None

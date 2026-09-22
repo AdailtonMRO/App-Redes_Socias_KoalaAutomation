@@ -3,81 +3,83 @@ Prompts e Schemas Estruturados para Geração de Conteúdo com IA (Google Gemini
 Suporta os 4 formatos oficiais do Instagram: REELS, STORIES, FEED e CAROUSEL.
 """
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, AliasChoices
 
 
 # --- ESQUEMAS PARA REELS ---
 class SceneSchema(BaseModel):
-    scene_number: int = Field(..., description="Número sequencial da cena")
-    duration: int = Field(default=5, description="Duração estimada em segundos (ex: 3 a 7 segundos)")
-    description: str = Field(..., description="Descrição visual do que acontece na cena")
-    visual_prompt: str = Field(..., description="Prompt detalhado em inglês para o modelo de vídeo Veo")
-    narration: str = Field(..., description="Texto da locução ou legenda de tela correspondente")
+    scene_number: int = Field(default=1, validation_alias=AliasChoices("scene_number", "numero", "cena", "scene", "id"))
+    duration: int = Field(default=4, validation_alias=AliasChoices("duration", "duracao", "tempo"))
+    description: str = Field(default="Cena cinematográfica de ação", validation_alias=AliasChoices("description", "descricao", "cena_descricao", "acao"))
+    visual_prompt: str = Field(default="Cinematic high speed tennis vertical 9:16", validation_alias=AliasChoices("visual_prompt", "prompt_visual", "prompt", "visual", "video_prompt"))
+    narration: str = Field(default="", validation_alias=AliasChoices("narration", "narracao", "locucao", "texto", "audio"))
 
 
 class ReelScriptSchema(BaseModel):
-    format: str = Field("REELS", description="Formato da publicação")
-    title: str = Field(..., description="Título interno do Reel")
-    hook: str = Field(..., description="Gancho magnético dos primeiros 3 segundos para reter atenção")
-    objective: str = Field(..., description="Objetivo principal (engajamento, autoridade, venda)")
-    script: str = Field(..., description="Roteiro narrativo completo")
-    scenes: List[SceneSchema] = Field(..., description="Lista de cenas sequenciais que compõem o Reel")
-    caption: str = Field(..., description="Legenda completa formatada para publicação no Instagram")
-    hashtags: List[str] = Field(default_factory=list, description="Lista de 5 a 10 hashtags estratégicas")
-    cta: str = Field(..., description="Chamada para ação final direcionando para o perfil/link")
+    format: str = Field("REELS", validation_alias=AliasChoices("format", "formato"))
+    title: str = Field("Reel Koala Tênis", validation_alias=AliasChoices("title", "titulo", "tema", "name"))
+    hook: str = Field(..., validation_alias=AliasChoices("hook", "gancho", "abertura"))
+    objective: str = Field(default="engajamento", validation_alias=AliasChoices("objective", "objetivo"))
+    script: str = Field(default="", validation_alias=AliasChoices("script", "roteiro", "narrativa", "conteudo"))
+    scenes: List[SceneSchema] = Field(default_factory=list, validation_alias=AliasChoices("scenes", "cenas", "cenas_do_video"))
+    caption: str = Field(default="", validation_alias=AliasChoices("caption", "legenda", "descricao_post"))
+    hashtags: List[str] = Field(default_factory=list, validation_alias=AliasChoices("hashtags", "tags"))
+    cta: str = Field(default="Siga @koalatenis_ para mais!", validation_alias=AliasChoices("cta", "chamada_para_acao", "call_to_action"))
 
 
 # --- ESQUEMA PARA STORIES (9:16) ---
 class StoryScriptSchema(BaseModel):
-    format: str = Field("STORIES", description="Formato da publicação")
-    title: str = Field(..., description="Tema central do Story")
-    stickers_recommended: List[str] = Field(default_factory=list, description="Adesivos recomendados (enquete, caixinha de perguntas, link)")
-    hook: str = Field(..., description="Frase de impacto inicial")
-    body: str = Field(..., description="Mensagem rápida direta e informal")
-    visual_prompt: str = Field(..., description="Prompt visual em 9:16")
-    call_to_action: str = Field(..., description="Interação esperada (ex: responda a enquete, mande DM)")
+    format: str = Field("STORIES", validation_alias=AliasChoices("format", "formato"))
+    title: str = Field("Story Koala Tênis", validation_alias=AliasChoices("title", "titulo", "tema"))
+    stickers_recommended: List[str] = Field(default_factory=list, validation_alias=AliasChoices("stickers_recommended", "adesivos", "stickers"))
+    hook: str = Field(..., validation_alias=AliasChoices("hook", "gancho", "frase_impacto"))
+    body: str = Field(default="", validation_alias=AliasChoices("body", "texto", "mensagem", "corpo"))
+    visual_prompt: str = Field(default="Vertical 9:16 tennis lifestyle", validation_alias=AliasChoices("visual_prompt", "prompt_visual", "prompt"))
+    call_to_action: str = Field(default="Responda aqui!", validation_alias=AliasChoices("call_to_action", "cta", "chamada_para_acao"))
 
 
 # --- ESQUEMA PARA POST DE FEED TRADICIONAL (1:1 ou 4:5) ---
 class FeedPostSchema(BaseModel):
-    format: str = Field("FEED", description="Formato da publicação")
-    title: str = Field(..., description="Título do post")
-    headline: str = Field(..., description="Manchete principal na imagem do post")
-    visual_prompt: str = Field(..., description="Prompt para imagem quadrada 1:1 de alta definição")
-    caption: str = Field(..., description="Texto rico e aprofundado para leitura no feed")
-    hashtags: List[str] = Field(default_factory=list, description="Hashtags para alcance")
-    cta: str = Field(..., description="Pergunta final para incentivar comentários e salvamentos")
+    format: str = Field("FEED", validation_alias=AliasChoices("format", "formato"))
+    title: str = Field("Post Koala Tênis", validation_alias=AliasChoices("title", "titulo", "tema"))
+    headline: str = Field(..., validation_alias=AliasChoices("headline", "manchete", "titulo_capa"))
+    visual_prompt: str = Field(default="High quality tennis court photography 1:1", validation_alias=AliasChoices("visual_prompt", "prompt_visual", "prompt"))
+    caption: str = Field(default="", validation_alias=AliasChoices("caption", "legenda", "texto"))
+    hashtags: List[str] = Field(default_factory=list, validation_alias=AliasChoices("hashtags", "tags"))
+    cta: str = Field(default="Deixe sua opinião nos comentários!", validation_alias=AliasChoices("cta", "chamada_para_acao", "call_to_action"))
 
 
 # --- ESQUEMA PARA POST CARROSSEL (SLIDES 1:1) ---
 class CarouselSlideSchema(BaseModel):
-    slide_number: int = Field(..., description="Número sequencial do slide (1 a 7)")
-    slide_title: str = Field(..., description="Título curto e impactante do slide")
-    slide_body: str = Field(..., description="Texto explicativo conciso (máximo 2 a 3 frases)")
-    visual_prompt: str = Field(..., description="Descrição visual do design do slide")
+    slide_number: int = Field(default=1, validation_alias=AliasChoices("slide_number", "numero", "slide"))
+    slide_title: str = Field(..., validation_alias=AliasChoices("slide_title", "titulo", "slide_titulo"))
+    slide_body: str = Field(default="", validation_alias=AliasChoices("slide_body", "texto", "conteudo"))
+    visual_prompt: str = Field(default="Minimalist sports slide layout", validation_alias=AliasChoices("visual_prompt", "prompt_visual", "prompt"))
 
 
 class CarouselSchema(BaseModel):
-    format: str = Field("CAROUSEL", description="Formato carrossel multi-slides")
-    title: str = Field(..., description="Tema do carrossel")
-    cover_hook: str = Field(..., description="Título irresistível da Capa (Slide 1) que faz a pessoa arrastar")
-    slides: List[CarouselSlideSchema] = Field(..., description="Sequência de 4 a 7 slides educativos")
-    caption: str = Field(..., description="Legenda completa que complementa o carrossel")
-    hashtags: List[str] = Field(default_factory=list, description="Hashtags estratégicas")
-    cta: str = Field("Salve este carrossel e compartilhe!", description="Chamada final para ação no último slide")
+    format: str = Field("CAROUSEL", validation_alias=AliasChoices("format", "formato"))
+    title: str = Field("Carrossel Koala Tênis", validation_alias=AliasChoices("title", "titulo", "tema"))
+    cover_hook: str = Field(..., validation_alias=AliasChoices("cover_hook", "gancho_capa", "capa", "hook"))
+    slides: List[CarouselSlideSchema] = Field(default_factory=list, validation_alias=AliasChoices("slides", "slides_educativos"))
+    caption: str = Field(default="", validation_alias=AliasChoices("caption", "legenda", "texto"))
+    hashtags: List[str] = Field(default_factory=list, validation_alias=AliasChoices("hashtags", "tags"))
+    cta: str = Field("Salve este carrossel e compartilhe!", validation_alias=AliasChoices("cta", "chamada_para_acao", "call_to_action"))
 
 
 SYSTEM_PROMPT_MULTI_FORMAT = """Você é um Diretor Criativo e Especialista em Crescimento de Redes Sociais com foco no Instagram.
-Seu papel é criar conteúdos com alta retenção e engajamento no formato especificado pelo usuário (REELS, STORIES, FEED ou CAROUSEL).
+Seu papel é criar conteúdos com altíssima retenção, ganchos magnéticos e engajamento no formato especificado pelo usuário (REELS, STORIES, FEED ou CAROUSEL).
 
-DIRETRIZES:
+DIRETRIZES FUNDAMENTAIS:
 1. Respeite as características do formato solicitado:
-   - REELS: Vídeo 9:16 com gancho forte nos primeiros 3 segundos.
+   - REELS: Vídeo 9:16 com gancho forte nos primeiros 3 segundos, lista de cenas (com visual_prompt detalhado em inglês para o Google Veo) e narração.
    - STORIES: Comunicação rápida, informal e com sugestão de adesivos interativos.
    - FEED: Imagem única marcante com legenda profunda e educativa.
    - CAROUSEL: Conteúdo em etapas lógicas, didático e de alto valor prático para salvar.
-2. NUNCA invente preços ou promessas que violem a lista de restrições ("avoid") da marca.
-3. Responda ESTRITAMENTE em formato JSON compatível com o formato solicitado.
+2. O foco da Koala Tênis é empoderar tenistas e entusiastas a melhorarem seu jogo e criarem sua própria máquina lançadora de bolas DIY com engenharia acessível.
+3. Responda ESTRITAMENTE em formato JSON com chaves em inglês:
+   Para REELS: {"format": "REELS", "title": "...", "hook": "...", "objective": "...", "script": "...", "scenes": [{"scene_number": 1, "duration": 4, "description": "...", "visual_prompt": "...", "narration": "..."}], "caption": "...", "hashtags": ["..."], "cta": "..."}
+4. NUNCA invente preços ou promessas que violem a lista de restrições ("avoid") da marca.
 """
 
 

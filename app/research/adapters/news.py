@@ -5,7 +5,9 @@ treinamento repetitivo, equipamentos e inovações no tênis.
 """
 from typing import List, Optional
 import xml.etree.ElementTree as ET
+import re
 import httpx
+
 
 from app.research.sources import SourceAdapter
 from app.research.models import ResearchItem
@@ -28,22 +30,18 @@ class NewsAdapter(SourceAdapter):
     async def fetch_items(
         self,
         keywords: Optional[List[str]] = None,
-        limit: int = 10,
+        limit: int = 15,
         geo: str = "BR",
         language: str = "pt",
     ) -> List[ResearchItem]:
         """
         Coleta notícias de tênis, treinamento e equipamentos via Google News RSS.
         """
-        # Tópicos padrão calibrados para o universo Koala Tênis (Tênis + Treinamento + Tecnologia)
-        default_queries = [
-            "tenis treino repeticao",
-            "maquina de bolas tenis",
-            "biomecanica tenis saque",
-            "tecnologia raquete cordas tenis",
-        ]
-        active_queries = keywords or default_queries
-        query_str = " OR ".join([f'"{q}"' if " " in q else q for q in active_queries[:4]])
+        if keywords:
+            query_str = " OR ".join(keywords[:5])
+        else:
+            # Query abrangente e dinâmica cobrindo astros atuais, circuito e treino
+            query_str = 'tênis (ATP OR WTA OR "Bia Haddad" OR "João Fonseca" OR Alcaraz OR Sinner OR Djokovic OR treino OR raquete)'
 
         if geo == "BR":
             rss_url = f"https://news.google.com/rss/search?q={query_str}&hl=pt-BR&gl=BR&ceid=BR:pt-419"
@@ -54,7 +52,9 @@ class NewsAdapter(SourceAdapter):
 
         try:
             async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:
-                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) KoalaContentRadar/1.0"}
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 KoalaContentRadar/1.3"
+                }
                 resp = await client.get(rss_url, headers=headers)
 
                 if resp.status_code == 200:
@@ -72,17 +72,20 @@ class NewsAdapter(SourceAdapter):
                         if not title_raw:
                             continue
 
+                        # Limpa sufixo da fonte caso presente
+                        clean_title = re.sub(r"\s*-\s*[^-]+$", "", title_raw).strip() or title_raw
+
                         items.append(
                             ResearchItem(
                                 source_name=f"News ({source_site})",
                                 source_type="news",
-                                title=title_raw,
+                                title=clean_title,
                                 url=link,
-                                summary=desc or f"Publicação recente sobre tênis e equipamentos: {title_raw}",
+                                summary=desc or f"Publicação recente sobre tênis: {clean_title}",
                                 published_at=pub_date,
                                 language=language,
                                 country=geo,
-                                topics=["tennis", "training", "technology", "diy"],
+                                topics=["tennis", "training", "atp_wta", "competicao"],
                                 raw_metrics={"source_outlet": source_site},
                             )
                         )

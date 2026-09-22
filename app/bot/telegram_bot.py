@@ -88,7 +88,17 @@ class TelegramBotService:
                 with open(file_path, "rb") as f:
                     files = {"video": (file_path.name, f, "video/mp4")}
                     resp = await client.post(url, data=data, files=files)
-                    return resp.status_code == 200
+                    if resp.status_code == 200:
+                        return True
+                    print(f"[WARN] Erro ao enviar vídeo no Telegram ({resp.status_code}): {resp.text}")
+                    # Se falhou por Markdown inválido, tenta reenviar texto puro
+                    if "can't parse entities" in resp.text.lower() and "parse_mode" in data:
+                        data_retry = {k: v for k, v in data.items() if k != "parse_mode"}
+                        f.seek(0)
+                        files_retry = {"video": (file_path.name, f, "video/mp4")}
+                        resp_retry = await client.post(url, data=data_retry, files=files_retry)
+                        return resp_retry.status_code == 200
+                    return False
         except Exception as e:
             print(f"[WARN] Erro ao enviar vídeo no Telegram: {e}")
             return False

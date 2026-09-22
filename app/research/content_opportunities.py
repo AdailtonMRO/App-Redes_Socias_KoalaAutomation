@@ -1,10 +1,11 @@
 """
-Módulo de Filtragem Estratégica e Oportunidades de Conteúdo com Google Gemini.
-Responsável por pegar os dados brutos de tendências e notícias e criar a PONTE
-com o objetivo de negócio central do Koala Tênis: incentivar os tenistas a
-montarem sua própria máquina lançadora de bolas DIY.
+Módulo de Filtragem Estratégica e Curadoria de Notícias de Tênis com Google Gemini.
+Responsável por processar dados brutos de tendências e notícias (TenisBrasil, Tenis News,
+ge.globo, ESPN, WTA, CBT, ATP, ITF) e transformá-los em oportunidades editoriais de
+alta autoridade para Stories do Instagram (@koalatenis_).
 """
 import json
+import random
 from typing import List, Dict, Any, Optional
 import httpx
 
@@ -13,56 +14,78 @@ from app.research.models import ResearchItem, ContentOpportunity
 
 settings = get_settings()
 
-SYSTEM_PROMPT_CONTENT_RADAR = """Você é o Diretor de Estratégia de Conteúdo e Conversão do projeto Koala Tênis (@koalatenis_).
+SYSTEM_PROMPT_CONTENT_RADAR = """Você é o Editor-Chefe e Curador Especialista de Notícias de Tênis do canal Koala Tênis (@koalatenis_).
 
-MISSÃO CRÍTICA DO PERFIL:
-O foco principal e absoluto do @koalatenis_ é FAZER COM QUE AS PESSOAS MONTEM A SUA PRÓPRIA MÁQUINA LANÇADORA DE BOLAS DE TÊNIS (projeto DIY / Faça Você Mesmo / Engenharia Acessível).
-Para atrair o público, o perfil publica conteúdos ricos, divertidos e de alta autoridade sobre o universo do tênis (ATP, biomecânica de saque, forehand, drills, tecnologia).
-Porém, TODO CONTEÚDO ESTRATÉGICO deve servir como TOPO OU MEIO DE FUNIL para despertar o desejo ou a necessidade de ter uma máquina de repetição.
+MISSÃO EDITORIAL DO PERFIL:
+O perfil @koalatenis_ é a principal referência informativa e didática sobre o universo do tênis para jogadores amadores, entusiastas e treinadores.
+Você acompanha e comenta diariamente os grandes acontecimentos do tênis brasileiro e mundial:
+- Tênis Brasileiro: João Fonseca (evolução rápida, forehand supersônico, transição juvenil-ATP), Bia Haddad Maia (consistência de fundo de quadra, garra mental), Luisa Stefani (duplas mundiais, agilidade e voleios rápidos na rede), Thiago Wild, Thiago Monteiro, Copa Davis, Billie Jean King Cup e jovens promessas da CBT.
+- Circuito Mundial & Grand Slams: Carlos Alcaraz, Jannik Sinner, Novak Djokovic, Daniil Medvedev, Aryna Sabalenka, Iga Swiatek, Masters 1000 e ATP/WTA.
+- Análise Tática, Técnica e Curiosidades: Estratégias de jogo, dados estatísticos, biomecânica dos golpes, evolução de materiais e rankings.
 
-SUA TAREFA:
-Receba uma lista de notícias, tendências e dados do circuito (ResearchItems).
-Para cada item analisado, você deve:
-1. Avaliar a relevância e o potencial de engajamento no Instagram (Reels/Carrossel/Feed).
-2. Classificar em um dos 6 Pilares:
+DIRETRIZ DE CONTEÚDO (FOCO EXCLUSIVO NO FORMATO STORY):
+Seu papel é analisar a lista de notícias e acontecimentos coletados em tempo real pelo Content Radar e selecionar as melhores matérias para publicação nos Stories do Instagram.
+Para cada matéria selecionada, você deve extrair um RESUMO JORNALÍSTICO CLARO E ENVOLVENTE (news_summary) que permita ao seguidor entender o fato imediatamente ao bater o olho na imagem do Story.
+
+Para cada oportunidade selecionada:
+1. "headline": Título atrativo, dinâmico e direto ao ponto para o topo do Story.
+2. "theme": Tema central resumido.
+3. "source_reference": Nome da fonte original de notícias (ex: TenisBrasil (UOL), ge.globo Tênis, Tenis News, WTA, ATP Tour).
+4. "pillar": Classificação temática:
    - 🎾 Tênis Profissional
-   - 🧠 Aprendizado & Biomecânica
-   - ⚙️ Tecnologia no Tênis
-   - 🔧 DIY & Engenharia
-   - 🔥 Tendências
-   - 😂 Conteúdo Leve
-3. CRIAR A "PONTE KOALA DIY" (diy_ball_machine_angle):
-   Como conectar essa notícia/tendência com o treinamento por repetição ou a montagem da máquina de bolas?
-   Exemplo: Se Alcaraz bateu recorde de saque -> Ângulo: Como o amador pode treinar devolução na mesma velocidade regulando os motores da máquina DIY.
-4. Definir uma nota de relevância estratégica de 1 a 10.
-5. Sugerir o melhor formato (REELS, CAROUSEL, FEED ou STORIES).
+   - 🇧🇷 Brasil no Circuito
+   - 🏆 Torneios & Resultados
+   - 🧠 Análise Técnica & Tática
+   - ⚙️ Equipamentos & Materiais
+   - 🔥 Bastidores & Curiosidades
+5. "relevance_score": Nota de 1 a 10 para o interesse do tenista.
+6. "news_summary": Resumo conciso, informativo e de alto valor (de 3 a 5 linhas bem explicadas sobre o que aconteceu, placares, recordes ou detalhes da matéria).
+7. "key_takeaway": O ponto central ou impacto imediato no ranking/temporada.
+8. "suggested_format": ESTRITAMENTE "STORIES".
+9. "why_it_matters": Por que o público do tênis vai querer ler, compartilhar e comentar nos Stories.
 
-Responda ESTRITAMENTE em formato JSON com uma lista de oportunidades no formato:
+Responda ESTRITAMENTE em formato JSON:
 {
   "opportunities": [
     {
-      "headline": "Título magnético do post/vídeo",
-      "theme": "Tema resumido",
-      "source_reference": "Nome da fonte original",
-      "pillar": "Pilar temático",
+      "headline": "...",
+      "theme": "...",
+      "source_reference": "...",
+      "pillar": "...",
       "relevance_score": 9,
-      "diy_ball_machine_angle": "Explicação detalhada de como linkar com a máquina de bolas DIY",
-      "suggested_format": "REELS",
-      "why_it_matters": "Por que o público vai querer assistir e compartilhar"
+      "news_summary": "...",
+      "key_takeaway": "...",
+      "suggested_format": "STORIES",
+      "why_it_matters": "..."
     }
   ],
-  "featured_headline": "Título da melhor oportunidade para publicar hoje",
-  "daily_briefing": "Resumo executivo de 2 parágrafos sobre o cenário de hoje"
+  "featured_headline": "...",
+  "daily_briefing": "..."
 }
 """
 
 
 class ContentOpportunityScorer:
-    """Filtra, ranqueia e contextualiza notícias para o universo Koala Tênis usando Gemini."""
+    """Filtra, ranqueia e contextualiza notícias de tênis para o Koala Tênis usando Gemini."""
+
+    CANDIDATE_MODELS = [
+        "gemini-3.1-flash-lite",
+        "gemini-3.6-flash",
+        "gemini-3-flash-preview",
+        "gemini-3.8-flash",
+        "gemini-flash-latest",
+        "gemini-flash-lite-latest",
+    ]
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.api_key = api_key or settings.GEMINI_API_KEY
-        self.model = model or settings.GEMINI_TEXT_MODEL or "gemini-2.5-flash"
+        preferred_model = model or getattr(settings, "GEMINI_TEXT_MODEL", None)
+        if preferred_model in ("gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-flash-preview"):
+            preferred_model = "gemini-3.1-flash-lite"
+        if preferred_model:
+            self.models_to_try = [preferred_model] + [m for m in self.CANDIDATE_MODELS if m != preferred_model]
+        else:
+            self.models_to_try = list(self.CANDIDATE_MODELS)
         self.base_url = "https://generativelanguage.googleapis.com/v1beta"
 
     async def score_and_filter(
@@ -70,120 +93,221 @@ class ContentOpportunityScorer:
         items: List[ResearchItem],
         profile_data: Optional[Dict[str, Any]] = None,
         top_k: int = 5,
+        avoid_headlines: Optional[List[str]] = None,
+        force_refresh: bool = False,
     ) -> List[ContentOpportunity]:
         """
-        Recebe itens coletados por qualquer adapter e devolve as oportunidades
-        lapidadas e conectadas à máquina lançadora de bolas.
+        Recebe itens coletados por qualquer adapter e devolve oportunidades editoriais
+        de tênis com resumo informativo formatado para Stories.
         """
         if not items:
             return self._generate_fallback_opportunities(top_k)
 
         if not self.api_key:
-            return self._generate_mock_opportunities(items, top_k)
+            return self._generate_mock_opportunities(items, top_k, avoid_headlines)
 
-        # Monta payload com dados compactos dos itens
-        items_payload = [item.to_compact_dict() for item in items[:15]]
+        sample_pool = list(items)
+        if force_refresh and len(sample_pool) > 15:
+            random.shuffle(sample_pool)
+
+        items_payload = [item.to_compact_dict() for item in sample_pool[:18]]
+
         profile_context = profile_data or {
             "name": "Koala Tênis",
             "username": "@koalatenis_",
-            "goal": "Incentivar tenistas a montarem sua própria máquina lançadora de bolas DIY",
-            "pillars": ["Tênis Profissional", "Treinamento", "Tecnologia", "DIY / Robótica", "Humor"],
+            "goal": "Canal de autoridade em notícias, análises táticas e evolução no tênis",
+            "pillars": ["Tênis Profissional", "Brasil no Circuito", "Torneios & Resultados", "Técnica & Biomecânica", "Curiosidades"],
         }
 
-        user_prompt = f"""PERFIL DO CLIENTE:
-{json.dumps(profile_context, ensure_ascii=False, indent=2)}
-
-ITENS RECENTES COLETADOS PELO RADAR (ÚLTIMAS 24H):
-{json.dumps(items_payload, ensure_ascii=False, indent=2)}
-
-Analise os itens acima, selecione os {top_k} melhores e crie as oportunidades com a ponte estratégica para a máquina DIY de bolas.
+        avoid_clause = ""
+        if avoid_headlines:
+            avoid_list_str = "\n".join([f"- {h}" for h in avoid_headlines[:10]])
+            avoid_clause = f"""
+IMPORTANTE: EVITE REPETIR OU GERAR NOTÍCIAS IDÊNTICAS A ESTAS RECENTEMENTE APRESENTADAS:
+{avoid_list_str}
+Priorize outras matérias e atletas diferentes da lista!
 """
 
-        url = f"{self.base_url}/models/{self.model}:generateContent?key={self.api_key}"
+        user_prompt = f"""PERFIL DO CANAL:
+{json.dumps(profile_context, ensure_ascii=False, indent=2)}
+
+NOTÍCIAS E ACONTECIMENTOS REAIS COLETADOS PELO RADAR:
+{json.dumps(items_payload, ensure_ascii=False, indent=2)}
+{avoid_clause}
+Analise os itens acima, selecione os {top_k} melhores e crie oportunidades com manchetes atrativas e resumos objetivos para o formato STORY.
+"""
+
         payload = {
             "system_instruction": {"parts": [{"text": SYSTEM_PROMPT_CONTENT_RADAR}]},
             "contents": [{"parts": [{"text": user_prompt}]}],
             "generationConfig": {
-                "temperature": 0.6,
+                "temperature": 0.7 if force_refresh else 0.5,
                 "response_mime_type": "application/json",
             },
         }
 
-        try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                resp = await client.post(url, json=payload)
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            for model_name in self.models_to_try:
+                url = f"{self.base_url}/models/{model_name}:generateContent?key={self.api_key}"
+                try:
+                    resp = await client.post(url, json=payload)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        candidates = data.get("candidates", [])
+                        if not candidates:
+                            continue
 
-            if resp.status_code != 200:
-                print(f"[WARN] Gemini API retornou status {resp.status_code}. Ativando mock scorer.")
-                return self._generate_mock_opportunities(items, top_k)
+                        text_content = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                        clean_json = text_content.strip().removeprefix("```json").removesuffix("```").strip()
+                        parsed = json.loads(clean_json)
 
-            data = resp.json()
-            candidates = data.get("candidates", [])
-            if not candidates:
-                return self._generate_mock_opportunities(items, top_k)
+                        raw_opps = parsed.get("opportunities", [])
+                        if not raw_opps:
+                            continue
 
-            text_content = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-            clean_json = text_content.strip().removeprefix("```json").removesuffix("```").strip()
-            parsed = json.loads(clean_json)
+                        opportunities: List[ContentOpportunity] = []
+                        for raw in raw_opps[:top_k]:
+                            opp = ContentOpportunity(
+                                headline=raw.get("headline", "Notícia de Tênis em Destaque"),
+                                theme=raw.get("theme", "Atualização do Circuito"),
+                                source_reference=raw.get("source_reference", "Content Radar"),
+                                pillar=raw.get("pillar", "🎾 Tênis Profissional"),
+                                relevance_score=int(raw.get("relevance_score", 8)),
+                                news_summary=raw.get(
+                                    "news_summary",
+                                    "Confira os principais detalhes e o impacto deste acontecimento no circuito de tênis.",
+                                ),
+                                key_takeaway=raw.get("key_takeaway", "Destaque da rodada no tênis."),
+                                suggested_format="STORIES",
+                                why_it_matters=raw.get("why_it_matters", "Gera alta retenção e interesse dos tenistas."),
+                            )
+                            opportunities.append(opp)
 
-            raw_opps = parsed.get("opportunities", [])
-            opportunities: List[ContentOpportunity] = []
+                        if opportunities:
+                            return opportunities
+                    else:
+                        print(f"[WARN] Gemini model {model_name} retornou HTTP {resp.status_code}. Tentando próximo modelo...")
+                except Exception as e:
+                    print(f"[WARN] Falha ao tentar modelo {model_name}: {e}")
 
-            for raw in raw_opps[:top_k]:
-                opp = ContentOpportunity(
-                    headline=raw.get("headline", "Oportunidade de Tênis"),
-                    theme=raw.get("theme", "Treinamento de Tênis"),
-                    source_reference=raw.get("source_reference", "Content Radar"),
-                    pillar=raw.get("pillar", "🧠 Aprendizado & Biomecânica"),
-                    relevance_score=int(raw.get("relevance_score", 8)),
-                    diy_ball_machine_angle=raw.get(
-                        "diy_ball_machine_angle",
-                        "Conectar com o treino repetitivo e consistência usando a máquina de bolas caseira.",
-                    ),
-                    suggested_format=raw.get("suggested_format", "REELS"),
-                    why_it_matters=raw.get("why_it_matters", "Gera alta retenção e educa o jogador."),
-                )
-                opportunities.append(opp)
+        return self._generate_mock_opportunities(items, top_k, avoid_headlines)
 
-            return opportunities
-        except Exception as e:
-            print(f"[ERROR] Erro ao processar oportunidades no Gemini: {e}")
-            return self._generate_mock_opportunities(items, top_k)
-
-    def _generate_mock_opportunities(self, items: List[ResearchItem], limit: int) -> List[ContentOpportunity]:
-        """Gera oportunidades estruturadas sem custo de API com base nos itens reais coletados."""
+    def _generate_mock_opportunities(
+        self,
+        items: List[ResearchItem],
+        limit: int,
+        avoid_headlines: Optional[List[str]] = None,
+    ) -> List[ContentOpportunity]:
+        """Gera oportunidades estruturadas com foco jornalístico no tênis baseadas nos itens reais."""
+        avoid_set = set((avoid_headlines or []))
         opps: List[ContentOpportunity] = []
-        for idx, item in enumerate(items[:limit]):
+
+        shuffled_items = list(items)
+        random.shuffle(shuffled_items)
+
+        mock_templates = [
+            {
+                "pillar": "🎾 Tênis Profissional",
+                "headline_fmt": "Destaque do Circuito: {title}",
+                "summary_fmt": "Confira os resultados mais recentes e a repercussão de {title} nos principais torneios mundiais.",
+                "takeaway": "Movimentação importante no ranking mundial e nas chaves dos torneios.",
+            },
+            {
+                "pillar": "🇧🇷 Brasil no Circuito",
+                "headline_fmt": "Brasileiros em quadra: {title}",
+                "summary_fmt": "Acompanhe o desempenho dos atletas brasileiros na rodada, com destaque para a evolução e resultados em {title}.",
+                "takeaway": "Representatividade do tênis nacional crescendo no circuito profissional.",
+            },
+            {
+                "pillar": "🏆 Torneios & Resultados",
+                "headline_fmt": "Giro de Resultados: {title}",
+                "summary_fmt": "As disputas continuam intensas nas quadras mundiais com confrontos decisivos em {title}.",
+                "takeaway": "Definição das fases finais e momentos decisivos da temporada.",
+            },
+            {
+                "pillar": "🧠 Análise Técnica & Tática",
+                "headline_fmt": "Análise de Desempenho: {title}",
+                "summary_fmt": "Entenda os fatores táticos, consistência de saque e golpes de fundo que ditaram o ritmo em {title}.",
+                "takeaway": "Lições práticas de postura e ritmo aplicáveis para o tenista amador.",
+            },
+        ]
+
+        template_idx = 0
+        for item in shuffled_items:
+            clean_title = item.title[:55].strip()
+            tmpl = mock_templates[template_idx % len(mock_templates)]
+            headline = tmpl["headline_fmt"].format(title=clean_title)
+
+            if headline in avoid_set:
+                template_idx += 1
+                continue
+
             opps.append(
                 ContentOpportunity(
                     research_item_id=item.id,
-                    headline=f"Como treinar igual aos profissionais: O segredo de {item.title[:45]}",
+                    headline=headline,
                     theme=item.title,
                     source_reference=item.source_name,
-                    pillar="🔧 DIY & Engenharia" if "machine" in item.title.lower() or "tecnologia" in item.title.lower() else "🧠 Aprendizado & Biomecânica",
-                    relevance_score=9 - idx if (9 - idx) >= 5 else 6,
-                    diy_ball_machine_angle=(
-                        "Demonstrar que profissionais só atingem consistência com repetição exaustiva, "
-                        "e que qualquer tenista amador pode ter esse mesmo volume construindo sua própria "
-                        "máquina lançadora com componentes acessíveis."
-                    ),
-                    suggested_format="REELS",
-                    why_it_matters="Conecta a admiração pelo tênis profissional com uma solução prática e empoderadora para o jogador.",
+                    pillar=tmpl["pillar"],
+                    relevance_score=max(7, 10 - len(opps)),
+                    news_summary=tmpl["summary_fmt"].format(title=clean_title),
+                    key_takeaway=tmpl["takeaway"],
+                    suggested_format="STORIES",
+                    why_it_matters="Notícia quente e relevante que mantém os seguidores sempre atualizados sobre o esporte.",
                 )
             )
-        return opps
+            template_idx += 1
+            if len(opps) >= limit:
+                break
+
+        return opps if opps else self._generate_fallback_opportunities(limit)
 
     def _generate_fallback_opportunities(self, limit: int) -> List[ContentOpportunity]:
-        """Garante que nunca retorne vazio mesmo em ausência total de internet."""
-        return [
+        """Garante retorno de notícias de alta qualidade mesmo em caso de falha de conexão."""
+        fallbacks = [
             ContentOpportunity(
-                headline="Por que os tenistas profissionais treinam com 500 bolas por hora?",
-                theme="Volume de treino e repetição motora no tênis",
-                source_reference="Koala Intelligence",
-                pillar="🔧 DIY & Engenharia",
+                headline="João Fonseca impressiona no circuito com aceleração de forehand",
+                theme="Evolução e destaque da nova geração do tênis brasileiro",
+                source_reference="TenisBrasil (UOL)",
+                pillar="🇧🇷 Brasil no Circuito",
                 relevance_score=10,
-                diy_ball_machine_angle="Mostrar a anatomia da máquina de bolas DIY e como dois motores de alta rotação criam o efeito topspin perfeito.",
-                suggested_format="REELS",
-                why_it_matters="Desmistifica a tecnologia e prova que construir a própria máquina é acessível e viável.",
-            )
+                news_summary="O jovem brasileiro segue chamando a atenção mundial ao disparar forehands a mais de 160km/h e demonstrar maturidade tática contra adversários experientes do top 100.",
+                key_takeaway="A ascensão meteórica consolida o Brasil como celeiro de talentos no circuito ATP.",
+                suggested_format="STORIES",
+                why_it_matters="Conteúdo de alta repercussão e orgulho nacional para a comunidade de tênis.",
+            ),
+            ContentOpportunity(
+                headline="Bia Haddad Maia impõe ritmo e vence batalha equilibrada no circuito",
+                theme="Desempenho e consistência de Bia Haddad",
+                source_reference="ge.globo Tênis",
+                pillar="🎾 Tênis Profissional",
+                relevance_score=9,
+                news_summary="Com solidez no fundo de quadra e resiliência mental nos momentos decisivos, a número 1 do Brasil superou mais um desafio importante rumo às fases decisivas.",
+                key_takeaway="Vitória fundamental para manutenção de pontos no ranking e confiança na temporada.",
+                suggested_format="STORIES",
+                why_it_matters="Inspiração para atletas e tenistas amadores sobre consistência e foco.",
+            ),
+            ContentOpportunity(
+                headline="Luisa Stefani avança nas duplas com reflexos impecáveis na rede",
+                theme="Circuito de duplas WTA e grandes resultados",
+                source_reference="WTA & Tênis Feminino BR",
+                pillar="🇧🇷 Brasil no Circuito",
+                relevance_score=9,
+                news_summary="A medalhista olímpica deu uma aula de posicionamento e voleios rápidos na rede, fechando a partida em dois sets diretos e garantindo vaga nas quartas.",
+                key_takeaway="Domínio tático na rede confirma o protagonismo brasileiro nas duplas mundiais.",
+                suggested_format="STORIES",
+                why_it_matters="Excelente material para tenistas que adoram jogar e acompanhar partidas de duplas.",
+            ),
+            ContentOpportunity(
+                headline="Disputa pelo topo: Sinner e Alcaraz elevam a intensidade do tênis mundial",
+                theme="Rivalidade da nova era no tênis",
+                source_reference="ATP Tour",
+                pillar="🏆 Torneios & Resultados",
+                relevance_score=8,
+                news_summary="A rivalidade moderna redefine os padrões de velocidade e recuperação defensiva, forçando o circuito profissional a se adaptar ao ritmo alucinante da nova era.",
+                key_takeaway="Novos padrões biomecânicos e de preparação física dominam os grandes torneios.",
+                suggested_format="STORIES",
+                why_it_matters="Discussão atrativa para todos que acompanham o tênis de elite.",
+            ),
         ]
+        return fallbacks[:limit]
