@@ -75,6 +75,28 @@ class ContentModel(Base):
     profile = relationship("ProfileModel", back_populates="contents")
     generations = relationship("GenerationModel", back_populates="content", cascade="all, delete-orphan")
     actions = relationship("ActionModel", back_populates="content", cascade="all, delete-orphan")
+    metrics = relationship("ContentMetricModel", back_populates="content", uselist=False, cascade="all, delete-orphan")
+
+class ContentMetricModel(Base):
+    __tablename__ = "content_metrics"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    content_id = Column(Integer, ForeignKey("contents.id"), nullable=False, unique=True, index=True)
+    instagram_media_id = Column(String(100), nullable=True)
+    
+    # Métricas
+    plays = Column(Integer, default=0)
+    likes = Column(Integer, default=0)
+    comments = Column(Integer, default=0)
+    shares = Column(Integer, default=0)
+    saved = Column(Integer, default=0)
+    reach = Column(Integer, default=0)
+    engagement_rate = Column(String(50), nullable=True)
+    
+    last_synced_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+    created_at = Column(DateTime, default=utc_now)
+
+    content = relationship("ContentModel", back_populates="metrics")
 
 
 class GenerationModel(Base):
@@ -102,3 +124,53 @@ class ActionModel(Base):
     created_at = Column(DateTime, default=utc_now)
 
     content = relationship("ContentModel", back_populates="actions")
+
+
+class RadarRunModel(Base):
+    __tablename__ = "radar_runs"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    profile_id = Column(String(50), ForeignKey("profiles.id"), nullable=True, index=True)
+    total_scanned = Column(Integer, default=0)
+    created_at = Column(DateTime, default=utc_now)
+
+    research_items = relationship("ResearchItemModel", back_populates="radar_run", cascade="all, delete-orphan")
+    opportunities = relationship("ContentOpportunityModel", back_populates="radar_run", cascade="all, delete-orphan")
+
+
+class ResearchItemModel(Base):
+    __tablename__ = "research_items"
+
+    id = Column(String(100), primary_key=True, index=True)
+    radar_run_id = Column(Integer, ForeignKey("radar_runs.id"), nullable=False, index=True)
+    source_name = Column(String(100), nullable=False)
+    source_type = Column(String(50), nullable=False)
+    title = Column(String(500), nullable=False)
+    url = Column(Text, nullable=True)
+    summary = Column(Text, nullable=True)
+    published_at = Column(String(100), nullable=True)
+    collected_at = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=utc_now)
+
+    radar_run = relationship("RadarRunModel", back_populates="research_items")
+
+
+class ContentOpportunityModel(Base):
+    __tablename__ = "content_opportunities"
+
+    id = Column(String(100), primary_key=True, index=True)
+    profile_id = Column(String(50), ForeignKey("profiles.id"), nullable=True, index=True)
+    radar_run_id = Column(Integer, ForeignKey("radar_runs.id"), nullable=False, index=True)
+    research_item_id = Column(String(100), ForeignKey("research_items.id"), nullable=True)
+    headline = Column(String(500), nullable=False)
+    theme = Column(String(255), nullable=True)
+    source_reference = Column(String(255), nullable=True)
+    pillar = Column(String(100), nullable=True)
+    relevance_score = Column(Integer, default=0)
+    news_summary = Column(Text, nullable=True)
+    key_takeaway = Column(Text, nullable=True)
+    suggested_format = Column(String(50), nullable=True)
+    why_it_matters = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=utc_now)
+
+    radar_run = relationship("RadarRunModel", back_populates="opportunities")

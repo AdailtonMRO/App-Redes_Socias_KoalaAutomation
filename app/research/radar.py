@@ -94,19 +94,53 @@ class ContentRadar:
         profile_data: Optional[Dict[str, Any]] = None,
         top_k: int = 4,
         refresh: bool = False,
+        db: Optional[Any] = None, # type: Session
     ) -> RadarDailyReport:
         """
-        Executa o pipeline completo do Radar com anti-repetição dinâmica:
+        Executa o pipeline completo do Radar com anti-repetição dinâmica consultando o banco.
         1. Coleta itens das 7 fontes especializadas e portais nacionais
         2. Deduplica e sanitiza
-        3. Passa pelo filtro Gemini com histórico de exclusão de temas recentes
-        4. Monta o relatório diário e atualiza o histórico de memória
+        3. Passa pelo filtro Gemini com histórico de exclusão de temas recentes do banco
+        4. Monta o relatório diário e persiste o run (items e opportunities) no banco
         """
         today_str = datetime.now().strftime("%d/%m/%Y")
         raw_items = await self.scan_all_sources(limit_per_source=6)
 
-        # Passa histórico recente para evitar repetição
-        avoid_list = list(_RECENT_HEADLINES_MEMORY) if refresh else None
+        # Passa histórico recente para evitar repetição (do banco se disponível)
+        avoid_list = None
+        performance_data = None
+        profile_id = profile_data.get("id") if profile_data else None
+        
+        if refresh:
+            if db:
+                from app.database.radar_repository import RadarRepository
+                from app.database.models import ContentModel, ContentStatus
+                repo = RadarRepository(db)
+                avoid_list = repo.get_recent_headlines(profile_id=profile_id, days=7)
+                
+                # Fetch recent metrics for the learning loop
+                try:
+                    recent_published = db.query(ContentModel).filter(
+                        ContentModel.profile_id == profile_id,
+                        ContentModel.status == ContentStatus.PUBLISHED,
+                        ContentModel.metrics.has()
+                    ).order_by(ContentModel.published_at.desc()).limit(10).all()
+                    
+                    if recent_published:
+                        performance_data = []
+                        for c in recent_published:
+                            if c.metrics:
+                                performance_data.append({
+                                    "tema": c.topic,
+                                    "formato": c.content_format,
+                                    "engajamento": c.metrics.engagement_rate,
+                                    "alcance": c.metrics.reach,
+                                    "salvos": c.metrics.saved
+                                })
+                except Exception as e:
+                    print(f"[WARN] Falha ao extrair métricas para Learning Loop: {e}")
+            else:
+                avoid_list = list(_RECENT_HEADLINES_MEMORY)
 
         opportunities = await self.scorer.score_and_filter(
             items=raw_items,
@@ -114,14 +148,26 @@ class ContentRadar:
             top_k=top_k,
             avoid_headlines=avoid_list,
             force_refresh=refresh,
+            performance_data=performance_data,
         )
 
-        # Atualiza memória de manchetes recentes
-        for opp in opportunities:
-            if opp.headline and opp.headline not in _RECENT_HEADLINES_MEMORY:
-                _RECENT_HEADLINES_MEMORY.append(opp.headline)
-        while len(_RECENT_HEADLINES_MEMORY) > _MAX_MEMORY_ITEMS:
-            _RECENT_HEADLINES_MEMORY.pop(0)
+        # Atualiza memória e salva no banco de dados
+        if db:
+            from app.database.radar_repository import RadarRepository
+            repo = RadarRepository(db)
+            repo.save_radar_run(
+                profile_id=profile_id,
+                total_scanned=len(raw_items),
+                raw_items=raw_items,
+                opportunities=opportunities
+            )
+        else:
+            # Fallback for when no db is provided
+            for opp in opportunities:
+                if opp.headline and opp.headline not in _RECENT_HEADLINES_MEMORY:
+                    _RECENT_HEADLINES_MEMORY.append(opp.headline)
+            while len(_RECENT_HEADLINES_MEMORY) > _MAX_MEMORY_ITEMS:
+                _RECENT_HEADLINES_MEMORY.pop(0)
 
         featured = opportunities[0] if opportunities else None
 

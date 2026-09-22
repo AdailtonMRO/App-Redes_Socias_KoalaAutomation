@@ -14,35 +14,24 @@ from app.research.models import ResearchItem, ContentOpportunity
 
 settings = get_settings()
 
-SYSTEM_PROMPT_CONTENT_RADAR = """Você é o Editor-Chefe e Curador Especialista de Notícias de Tênis do canal Koala Tênis (@koalatenis_).
+SYSTEM_PROMPT_CONTENT_RADAR = """Você é o Editor-Chefe e Curador Especialista do perfil/canal em questão.
 
-MISSÃO EDITORIAL DO PERFIL:
-O perfil @koalatenis_ é a principal referência informativa e didática sobre o universo do tênis para jogadores amadores, entusiastas e treinadores.
-Você acompanha e comenta diariamente os grandes acontecimentos do tênis brasileiro e mundial:
-- Tênis Brasileiro: João Fonseca (evolução rápida, forehand supersônico, transição juvenil-ATP), Bia Haddad Maia (consistência de fundo de quadra, garra mental), Luisa Stefani (duplas mundiais, agilidade e voleios rápidos na rede), Thiago Wild, Thiago Monteiro, Copa Davis, Billie Jean King Cup e jovens promessas da CBT.
-- Circuito Mundial & Grand Slams: Carlos Alcaraz, Jannik Sinner, Novak Djokovic, Daniil Medvedev, Aryna Sabalenka, Iga Swiatek, Masters 1000 e ATP/WTA.
-- Análise Tática, Técnica e Curiosidades: Estratégias de jogo, dados estatísticos, biomecânica dos golpes, evolução de materiais e rankings.
+Sua missão é analisar a lista de notícias e acontecimentos coletados em tempo real pelo Content Radar e selecionar as melhores matérias e oportunidades para publicação, levando sempre em consideração a IDENTIDADE DA MARCA e a ESTRATÉGIA EDITORIAL fornecidas no prompt do usuário.
 
 DIRETRIZ DE CONTEÚDO (FOCO EXCLUSIVO NO FORMATO STORY):
-Seu papel é analisar a lista de notícias e acontecimentos coletados em tempo real pelo Content Radar e selecionar as melhores matérias para publicação nos Stories do Instagram.
-Para cada matéria selecionada, você deve extrair um RESUMO JORNALÍSTICO CLARO E ENVOLVENTE (news_summary) que permita ao seguidor entender o fato imediatamente ao bater o olho na imagem do Story.
+Seu papel é selecionar as melhores oportunidades para publicação nos Stories.
+Para cada matéria selecionada, você deve extrair um RESUMO JORNALÍSTICO CLARO E ENVOLVENTE (news_summary) que permita ao seguidor entender o fato imediatamente.
 
 Para cada oportunidade selecionada:
 1. "headline": Título atrativo, dinâmico e direto ao ponto para o topo do Story.
 2. "theme": Tema central resumido.
-3. "source_reference": Nome da fonte original de notícias (ex: TenisBrasil (UOL), ge.globo Tênis, Tenis News, WTA, ATP Tour).
-4. "pillar": Classificação temática:
-   - 🎾 Tênis Profissional
-   - 🇧🇷 Brasil no Circuito
-   - 🏆 Torneios & Resultados
-   - 🧠 Análise Técnica & Tática
-   - ⚙️ Equipamentos & Materiais
-   - 🔥 Bastidores & Curiosidades
-5. "relevance_score": Nota de 1 a 10 para o interesse do tenista.
-6. "news_summary": Resumo conciso, informativo e de alto valor (de 3 a 5 linhas bem explicadas sobre o que aconteceu, placares, recordes ou detalhes da matéria).
-7. "key_takeaway": O ponto central ou impacto imediato no ranking/temporada.
+3. "source_reference": Nome da fonte original.
+4. "pillar": Classificação temática baseada nos pilares editoriais da marca.
+5. "relevance_score": Nota de 1 a 10 para o interesse do público-alvo da marca.
+6. "news_summary": Resumo conciso, informativo e de alto valor (de 3 a 5 linhas).
+7. "key_takeaway": O ponto central ou impacto imediato do acontecimento.
 8. "suggested_format": ESTRITAMENTE "STORIES".
-9. "why_it_matters": Por que o público do tênis vai querer ler, compartilhar e comentar nos Stories.
+9. "why_it_matters": Por que o público do perfil vai querer ler, compartilhar e comentar.
 
 Responda ESTRITAMENTE em formato JSON:
 {
@@ -95,6 +84,7 @@ class ContentOpportunityScorer:
         top_k: int = 5,
         avoid_headlines: Optional[List[str]] = None,
         force_refresh: bool = False,
+        performance_data: Optional[List[Dict[str, Any]]] = None,
     ) -> List[ContentOpportunity]:
         """
         Recebe itens coletados por qualquer adapter e devolve oportunidades editoriais
@@ -115,8 +105,9 @@ class ContentOpportunityScorer:
         profile_context = profile_data or {
             "name": "Koala Tênis",
             "username": "@koalatenis_",
-            "goal": "Canal de autoridade em notícias, análises táticas e evolução no tênis",
-            "pillars": ["Tênis Profissional", "Brasil no Circuito", "Torneios & Resultados", "Técnica & Biomecânica", "Curiosidades"],
+            "identity": {"positioning": "Canal de autoridade em notícias de tênis"},
+            "content": {"pillars": ["Tênis Profissional", "Brasil no Circuito", "Torneios & Resultados"]},
+            "strategy": {"frequency": "diário"}
         }
 
         avoid_clause = ""
@@ -128,12 +119,24 @@ IMPORTANTE: EVITE REPETIR OU GERAR NOTÍCIAS IDÊNTICAS A ESTAS RECENTEMENTE APR
 Priorize outras matérias e atletas diferentes da lista!
 """
 
+        performance_clause = ""
+        if performance_data:
+            perf_str = json.dumps(performance_data, ensure_ascii=False, indent=2)
+            performance_clause = f"""
+PERFORMANCE RECENTE DO PERFIL (LEARNING LOOP):
+Abaixo estão os resultados reais das últimas publicações. Use esses dados para entender o que mais atrai o público:
+{perf_str}
+
+Instrução Adicional: Priorize selecionar notícias que tenham similaridade temática com os conteúdos que tiveram melhor engajamento ou maior alcance listados acima.
+"""
+
         user_prompt = f"""PERFIL DO CANAL:
 {json.dumps(profile_context, ensure_ascii=False, indent=2)}
 
 NOTÍCIAS E ACONTECIMENTOS REAIS COLETADOS PELO RADAR:
 {json.dumps(items_payload, ensure_ascii=False, indent=2)}
 {avoid_clause}
+{performance_clause}
 Analise os itens acima, selecione os {top_k} melhores e crie oportunidades com manchetes atrativas e resumos objetivos para o formato STORY.
 """
 

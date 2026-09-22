@@ -3,9 +3,11 @@ Router da API REST para o Content Radar.
 Permite consultar oportunidades diárias, forçar varreduras sob demanda
 e integrar com cron jobs externos ou painel web.
 """
-from fastapi import APIRouter, Query, BackgroundTasks
+from fastapi import APIRouter, Query, BackgroundTasks, Depends
 from typing import Optional, Dict, Any
+from sqlalchemy.orm import Session
 
+from app.database.database import get_db
 from app.research.radar import ContentRadar
 from app.research.models import RadarDailyReport
 from app.profiles.manager import ProfileManager
@@ -20,6 +22,7 @@ async def get_daily_radar(
     profile_id: Optional[str] = Query(None, description="ID do perfil de referência"),
     top_k: int = Query(5, ge=1, le=10, description="Quantidade de oportunidades a retornar"),
     refresh: bool = Query(False, description="Forçar rotação anti-repetição de notícias"),
+    db: Session = Depends(get_db)
 ):
     """Retorna o briefing diário consolidado com as melhores oportunidades de conteúdo."""
     profile_data = None
@@ -32,7 +35,7 @@ async def get_daily_radar(
         if profiles:
             profile_data = profiles[0]
 
-    report = await radar.run_daily_radar(profile_data=profile_data, top_k=top_k, refresh=refresh)
+    report = await radar.run_daily_radar(profile_data=profile_data, top_k=top_k, refresh=refresh, db=db)
     return report
 
 
@@ -40,12 +43,13 @@ async def get_daily_radar(
 async def trigger_radar_scan(
     notify_telegram: bool = Query(True, description="Se deve enviar o briefing matinal no Telegram"),
     refresh: bool = Query(False, description="Forçar rotação anti-repetição"),
+    db: Session = Depends(get_db)
 ):
     """Dispara a varredura sob demanda de todas as fontes externas especializadas."""
     profiles = profile_manager.list_profiles()
     profile_data = profiles[0] if profiles else None
 
-    report = await radar.run_daily_radar(profile_data=profile_data, top_k=5, refresh=refresh)
+    report = await radar.run_daily_radar(profile_data=profile_data, top_k=5, refresh=refresh, db=db)
 
     if notify_telegram:
         from app.bot.telegram_bot import get_telegram_bot

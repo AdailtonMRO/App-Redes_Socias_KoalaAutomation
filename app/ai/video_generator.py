@@ -55,7 +55,7 @@ class VideoGeneratorService:
                     parse_mode="Markdown",
                 )
 
-            veo_result = await self._generate_with_veo(content_id, scenes, telegram_notifier, chat_id)
+            veo_result = await self._generate_with_veo(content_id, script_data, telegram_notifier, chat_id)
             if veo_result.get("success"):
                 video_path = veo_result.get("video_path")
                 self.processor.extract_thumbnail(video_path, str(thumb_path))
@@ -106,14 +106,19 @@ class VideoGeneratorService:
     async def _generate_with_veo(
         self,
         content_id: int,
-        scenes: List[Dict[str, Any]],
+        script_data: Dict[str, Any],
         telegram_notifier=None,
         chat_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Dispara a operação assíncrona do Google Veo e monitora com polling."""
-        # Prompt visual consolidado da cena principal
-        first_scene = scenes[0] if scenes else {}
-        visual_prompt = first_scene.get("visual_prompt") or "Cinematic tennis court vertical 9:16 high speed action"
+        scenes = script_data.get("scenes", [])
+        main_prompt = script_data.get("main_visual_prompt")
+        
+        if main_prompt:
+            visual_prompt = main_prompt
+        else:
+            first_scene = scenes[0] if scenes else {}
+            visual_prompt = first_scene.get("visual_prompt") or "Cinematic tennis court vertical 9:16 high speed action"
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.veo_model}:predictLongRunning?key={self.api_key}"
         payload = {

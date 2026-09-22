@@ -11,6 +11,41 @@ from app.config import get_settings
 settings = get_settings()
 
 
+class IdentitySchema(BaseModel):
+    who_we_are: str = Field(default="", description="Quem somos (Posicionamento curto)")
+    audience: List[str] = Field(default_factory=list, description="Para quem falamos (Público-alvo)")
+    positioning: str = Field(default="", description="Posicionamento da marca")
+    authority: str = Field(default="", description="Autoridade (Por que nos ouvir)")
+    personality: str = Field(default="", description="Personalidade da marca")
+
+class ContentSchema(BaseModel):
+    pillars: List[str] = Field(default_factory=list, description="Pilares editoriais")
+    subthemes: List[str] = Field(default_factory=list, description="Subtemas explorados")
+    priority_topics: List[str] = Field(default_factory=list, description="Assuntos prioritários")
+    secondary_topics: List[str] = Field(default_factory=list, description="Assuntos secundários")
+    forbidden_topics: List[str] = Field(default_factory=list, description="Assuntos proibidos (O que evitar)")
+    formats: List[str] = Field(default_factory=list, description="Formatos aceitos (Reels, Feed, etc)")
+
+class BusinessSchema(BaseModel):
+    products: List[str] = Field(default_factory=list, description="Produtos oferecidos")
+    services: List[str] = Field(default_factory=list, description="Serviços oferecidos")
+    offers: List[str] = Field(default_factory=list, description="Ofertas vigentes")
+    objectives: List[str] = Field(default_factory=list, description="Objetivos de negócio (venda, engajamento)")
+    ctas: List[str] = Field(default_factory=list, description="CTAs aceitos")
+
+class StyleSchema(BaseModel):
+    tone: List[str] = Field(default_factory=list, description="Tom de voz da comunicação")
+    vocabulary: List[str] = Field(default_factory=list, description="Vocabulário específico (Jargões)")
+    rhythm: str = Field(default="dinâmico", description="Ritmo da edição e locução")
+    aesthetics: str = Field(default="", description="Estética visual")
+    references: List[str] = Field(default_factory=list, description="Perfis ou canais de referência")
+
+class StrategySchema(BaseModel):
+    frequency: str = Field(default="diário", description="Frequência de postagem")
+    pillar_proportion: str = Field(default="", description="Proporção ideal dos pilares")
+    content_objectives: List[str] = Field(default_factory=list, description="Objetivos por tipo de conteúdo")
+    funnel_stage: str = Field(default="TOFU", description="Estágio do funil predominante")
+
 class ProfileSchema(BaseModel):
     id: str = Field(..., description="Identificador único (slug) do perfil")
     name: str = Field(..., description="Nome de exibição da marca/perfil")
@@ -20,16 +55,15 @@ class ProfileSchema(BaseModel):
     instagram_access_token: Optional[str] = Field(None, description="Token de acesso específico da conta (opcional, usa global se vazio)")
     instagram_account_id_env: Optional[str] = Field("INSTAGRAM_ACCOUNT_ID", description="Variável de ambiente com o ID da conta")
     instagram_token_env: Optional[str] = Field("INSTAGRAM_ACCESS_TOKEN", description="Variável de ambiente com o token de acesso")
-    niche: List[str] = Field(default_factory=list, description="Lista de tópicos/nichos de atuação")
-    audience: List[str] = Field(default_factory=list, description="Público-alvo principal")
-    tone: List[str] = Field(default_factory=list, description="Tom de voz da comunicação")
-    objectives: List[str] = Field(default_factory=list, description="Objetivos do perfil")
-    video_format: str = Field("9:16", description="Proporção do vídeo (padrão 9:16 para Reels)")
-    preferred_duration: str = Field("20-30s", description="Duração média preferida")
-    cta: str = Field("Siga o perfil para mais dicas!", description="Chamada para ação padrão")
-    avoid: List[str] = Field(default_factory=list, description="O que a IA deve evitar alucinar ou mencionar")
     logo_path: Optional[str] = Field(None, description="Caminho do arquivo local da logomarca (PNG/JPG)")
     logo_url: Optional[str] = Field(None, description="URL pública ou caminho web da logomarca")
+
+    # Novos agrupamentos do Cérebro Editorial (Profile DNA)
+    identity: IdentitySchema = Field(default_factory=IdentitySchema)
+    content: ContentSchema = Field(default_factory=ContentSchema)
+    business: BusinessSchema = Field(default_factory=BusinessSchema)
+    style: StyleSchema = Field(default_factory=StyleSchema)
+    strategy: StrategySchema = Field(default_factory=StrategySchema)
 
 
 class ProfileManager:

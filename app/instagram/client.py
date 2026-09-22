@@ -170,5 +170,54 @@ class MetaGraphClient:
                 return {"success": True, "media_id": resp.json().get("id")}
             return {"success": False, "error": resp.json()}
 
+    async def get_media_insights(self, media_id: str) -> Dict[str, Any]:
+        """Consulta as métricas orgânicas de uma mídia via Graph API (Reels, Feed, Carrossel)."""
+        url = f"{self.base_url}/{media_id}/insights"
+        
+        # 'plays' é específico de REELS, então pedimos um conjunto genérico 
+        # que engloba as principais métricas de Reels e Posts.
+        # A Meta às vezes altera os nomes das métricas de acordo com o tipo da mídia.
+        # Estamos pedindo: plays, likes, comments, shares, saved, reach.
+        params = {
+            "access_token": self.access_token,
+            "metric": "plays,likes,comments,shares,saved,reach"
+        }
+        
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(url, params=params)
+            
+            if resp.status_code == 200:
+                data = resp.json().get("data", [])
+                
+                # O formato do retorno é uma lista de dicts tipo:
+                # {"name": "plays", "period": "lifetime", "values": [{"value": 100}]}
+                metrics_parsed = {}
+                for item in data:
+                    metric_name = item.get("name")
+                    # Pegar o valor lifetime
+                    values = item.get("values", [])
+                    if values:
+                        metrics_parsed[metric_name] = values[0].get("value", 0)
+                        
+                return {"success": True, "metrics": metrics_parsed}
+            else:
+                # Fallback: Se der erro porque a mídia não suporta "plays", podemos tentar sem o "plays"
+                error_info = resp.json()
+                if "plays" in str(error_info):
+                    params["metric"] = "likes,comments,shares,saved,reach"
+                    fallback_resp = await client.get(url, params=params)
+                    if fallback_resp.status_code == 200:
+                        data = fallback_resp.json().get("data", [])
+                        metrics_parsed = {}
+                        for item in data:
+                            metric_name = item.get("name")
+                            values = item.get("values", [])
+                            if values:
+                                metrics_parsed[metric_name] = values[0].get("value", 0)
+                        return {"success": True, "metrics": metrics_parsed}
+                    return {"success": False, "error": fallback_resp.json()}
+                
+                return {"success": False, "error": error_info}
+
     # Alias para compatibilidade
     publish_reel = publish_media

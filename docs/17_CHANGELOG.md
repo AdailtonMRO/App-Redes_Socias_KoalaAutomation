@@ -4,6 +4,38 @@ Todas as alterações notáveis deste projeto são registradas neste arquivo.
 
 ---
 
+## [2.0.0] — 2026-09-22
+
+### 🧠 Arquitetura Alvo Completa (Roadmap V1 → V2)
+
+Esta versão conclui as **5 etapas do Roadmap de Evolução** definido em `docs/20_ARQUITETURA_ALVO_KOALA_AUTOMATION.md`, transformando o Koala Automation de automatizador de Instagram em um **Agente Editorial Autônomo com aprendizado contínuo**.
+
+#### Etapa 1 — Consolidação do Cérebro Editorial (Profile DNA)
+- Refatoração completa do `Profile DNA` em schemas Pydantic aninhados: `Identity`, `Content`, `Business`, `Style` e `Strategy`.
+- Criação da função `build_prompt_by_format` dinâmica em `app/ai/prompts.py` que constrói o prompt do Gemini com base na personalidade do perfil ativo, respeitando pilares, tom de voz, público e objetivos de negócio.
+
+#### Etapa 2 — Persistência do Radar de Notícias
+- Criação das tabelas `radar_runs`, `research_items` e `content_opportunities` no banco SQLite.
+- Implementação do `RadarRepository` (`app/database/radar_repository.py`) para abstrair operações de banco e eliminar o estado global volátil `_RECENT_HEADLINES_MEMORY`.
+- Refatoração do `ContentRadar` e routers de API/Telegram para injeção de dependência de sessão de banco (`db`), tornando as operações de persistência atômicas.
+
+#### Etapa 3 — Refinamento da Geração de Vídeo
+- Adição dos campos `audio_script` (roteiro completo para TTS) e `main_visual_prompt` (prompt visual otimizado para IA de vídeo) ao `ReelScriptSchema` em `app/ai/prompts.py`.
+- Atualização do `SYSTEM_PROMPT_MULTI_FORMAT` para exigir esses campos estruturados do Gemini.
+- Refatoração de `_generate_with_veo` em `app/ai/video_generator.py` para consumir o `main_visual_prompt` consolidado (em vez de improvisação com a primeira cena do array).
+
+#### Etapa 4 — Coleta de Métricas pós-publicação
+- Criação do `ContentMetricModel` em `app/database/models.py` com campos: `plays`, `likes`, `comments`, `shares`, `saved`, `reach` e `engagement_rate` calculada.
+- Criação do `MetricsRepository` (`app/database/metrics_repository.py`) com lógica upsert de métricas.
+- Adição do método `get_media_insights(media_id)` ao `MetaGraphClient` (`app/instagram/client.py`) com fallback inteligente para tipos de mídia que não suportam `plays`.
+- Adicionado o comando `/metrics` ao Telegram Bot (`app/bot/handlers.py` e `app/bot/telegram_bot.py`), que exibe um painel com os dados dos 5 últimos posts publicados.
+
+#### Etapa 5 — Learning Loop (Retroalimentação por Métricas)
+- O orquestrador `run_daily_radar` em `app/research/radar.py` agora extrai os resultados reais dos últimos posts publicados (temas, formatos, engajamento, alcance e salvamentos) e passa para o `ContentOpportunityScorer` como `performance_data`.
+- O `score_and_filter` em `app/research/content_opportunities.py` recebe e injeta um bloco `PERFORMANCE RECENTE DO PERFIL (LEARNING LOOP)` no prompt do Gemini curador, instruindo-o a priorizar assuntos com similaridade aos conteúdos de melhor desempenho histórico.
+
+---
+
 ## [1.4.0] — 2026-09-22
 
 ### 🎾 Content Radar Puro em Notícias e Geração de Story Estático 9:16 com Logo

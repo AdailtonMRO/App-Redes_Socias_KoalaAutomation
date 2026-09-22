@@ -20,6 +20,8 @@ class ReelScriptSchema(BaseModel):
     title: str = Field("Reel Koala Tênis", validation_alias=AliasChoices("title", "titulo", "tema", "name"))
     hook: str = Field(..., validation_alias=AliasChoices("hook", "gancho", "abertura"))
     objective: str = Field(default="engajamento", validation_alias=AliasChoices("objective", "objetivo"))
+    audio_script: str = Field(default="", validation_alias=AliasChoices("audio_script", "roteiro_audio", "narracao_completa"))
+    main_visual_prompt: str = Field(default="", validation_alias=AliasChoices("main_visual_prompt", "prompt_visual_principal", "prompt_video"))
     script: str = Field(default="", validation_alias=AliasChoices("script", "roteiro", "narrativa", "conteudo"))
     scenes: List[SceneSchema] = Field(default_factory=list, validation_alias=AliasChoices("scenes", "cenas", "cenas_do_video"))
     caption: str = Field(default="", validation_alias=AliasChoices("caption", "legenda", "descricao_post"))
@@ -72,37 +74,58 @@ Seu papel é criar conteúdos com altíssima retenção, ganchos magnéticos e e
 
 DIRETRIZES FUNDAMENTAIS:
 1. Respeite as características do formato solicitado:
-   - REELS: Vídeo 9:16 com gancho forte nos primeiros 3 segundos, lista de cenas (com visual_prompt detalhado em inglês para o Google Veo) e narração.
+   - REELS: Vídeo 9:16 com gancho forte nos primeiros segundos. Você DEVE fornecer o `audio_script` completo, o `main_visual_prompt` em inglês (para a IA de vídeo gerar uma cena contínua de alta qualidade) e a lista de `scenes` sincronizadas.
    - STORIES: Comunicação rápida, informal e com sugestão de adesivos interativos.
    - FEED: Imagem única marcante com legenda profunda e educativa.
    - CAROUSEL: Conteúdo em etapas lógicas, didático e de alto valor prático para salvar.
 2. O foco da Koala Tênis é empoderar tenistas e entusiastas a melhorarem seu jogo e criarem sua própria máquina lançadora de bolas DIY com engenharia acessível.
 3. Responda ESTRITAMENTE em formato JSON com chaves em inglês:
-   Para REELS: {"format": "REELS", "title": "...", "hook": "...", "objective": "...", "script": "...", "scenes": [{"scene_number": 1, "duration": 4, "description": "...", "visual_prompt": "...", "narration": "..."}], "caption": "...", "hashtags": ["..."], "cta": "..."}
+   Para REELS: {"format": "REELS", "title": "...", "hook": "...", "objective": "...", "audio_script": "...", "main_visual_prompt": "...", "script": "...", "scenes": [{"scene_number": 1, "duration": 4, "description": "...", "visual_prompt": "...", "narration": "..."}], "caption": "...", "hashtags": ["..."], "cta": "..."}
 4. NUNCA invente preços ou promessas que violem a lista de restrições ("avoid") da marca.
 """
 
 
 def build_prompt_by_format(profile_data: dict, topic: str, content_format: str = "REELS") -> str:
-    """Monta o prompt específico para cada tipo de formato."""
+    """Monta o prompt específico para cada tipo de formato, injetando o Profile DNA."""
+    identity = profile_data.get('identity', {})
+    content = profile_data.get('content', {})
+    business = profile_data.get('business', {})
+    style = profile_data.get('style', {})
+    strategy = profile_data.get('strategy', {})
+
     base_info = f"""MARCA / PERFIL:
 - Nome: {profile_data.get('name')}
 - Username: {profile_data.get('username')}
-- Nichos: {', '.join(profile_data.get('niche', []))}
-- Público-Alvo: {', '.join(profile_data.get('audience', []))}
-- Tom de Voz: {', '.join(profile_data.get('tone', []))}
-- CTA Padrão: {profile_data.get('cta')}
-- O que EVITAR: {', '.join(profile_data.get('avoid', []))}
 
-TEMA DO CONTEÚDO:
+IDENTIDADE:
+- Quem somos: {identity.get('who_we_are', '')}
+- Público-Alvo: {', '.join(identity.get('audience', []))}
+- Posicionamento: {identity.get('positioning', '')}
+- Autoridade: {identity.get('authority', '')}
+- Personalidade: {identity.get('personality', '')}
+
+CONTEÚDO:
+- Pilares: {', '.join(content.get('pillars', []))}
+- O que EVITAR (Restrições): {', '.join(content.get('forbidden_topics', []))}
+
+ESTILO E TOM:
+- Tom de Voz: {', '.join(style.get('tone', []))}
+- Ritmo/Dinâmica: {style.get('rhythm', '')}
+- Vocabulário/Jargões: {', '.join(style.get('vocabulary', []))}
+
+NEGÓCIO & ESTRATÉGIA:
+- CTAs Aceitos: {', '.join(business.get('ctas', []))}
+- Estágio do Funil: {strategy.get('funnel_stage', '')}
+
+TEMA/OPORTUNIDADE A SER TRABALHADA:
 "{topic}"
 """
     fmt = content_format.upper()
     if fmt == "CAROUSEL":
-        return base_info + "\nCrie um CARROSSEL EDUCATIVO com 5 a 6 slides no formato JSON especificado. O Slide 1 deve ser uma Capa magnética que força o usuário a arrastar para o lado."
+        return base_info + "\nCrie um CARROSSEL EDUCATIVO com 5 a 6 slides no formato JSON especificado. O Slide 1 deve ser uma Capa magnética que força o usuário a arrastar para o lado. Respeite o tom e o ritmo da marca."
     elif fmt == "STORIES":
-        return base_info + "\nCrie uma sequência de STORIES em formato 9:16 com linguagem rápida, engajadora e sugestão de sticker interativo."
+        return base_info + "\nCrie uma sequência de STORIES em formato 9:16 com linguagem rápida, engajadora e sugestão de sticker interativo. Respeite o tom e o ritmo da marca."
     elif fmt == "FEED":
-        return base_info + "\nCrie um POST DE FEED tradicional com manchete de capa de alta autoridade e legenda completa, espaçada e estruturada para debate nos comentários."
+        return base_info + "\nCrie um POST DE FEED tradicional com manchete de capa de alta autoridade e legenda completa, espaçada e estruturada para debate nos comentários. Respeite a autoridade da marca."
     else:
-        return base_info + "\nCrie um roteiro viral de REEL (Vídeo 9:16) com gancho nos 3 primeiros segundos, lista de cenas cinematográficas e legenda com hashtags."
+        return base_info + "\nCrie um roteiro viral de REEL (Vídeo 9:16) com gancho nos primeiros segundos, lista de cenas cinematográficas (em visual_prompt para a IA de vídeo) e legenda. Siga estritamente a personalidade e estética da marca."

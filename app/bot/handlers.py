@@ -144,6 +144,55 @@ async def handle_perfis(bot, chat_id: int):
 
     await bot.send_message(chat_id, text, reply_markup=reply_markup, parse_mode="Markdown")
 
+async def handle_metrics(bot, chat_id: int):
+    """Sincroniza as métricas dos conteúdos publicados na Graph API."""
+    await bot.send_message(chat_id, "🔄 *Sincronizando métricas com o Instagram...*", parse_mode="Markdown")
+    
+    db = SessionLocal()
+    try:
+        from app.database.models import ContentModel, ContentStatus
+        from app.database.metrics_repository import MetricsRepository
+        from app.instagram.client import MetaGraphClient
+        
+        # Pega os 5 últimos conteúdos publicados
+        published_contents = db.query(ContentModel).filter(
+            ContentModel.status == ContentStatus.PUBLISHED,
+            ContentModel.instagram_media_id.isnot(None)
+        ).order_by(ContentModel.published_at.desc()).limit(5).all()
+        
+        if not published_contents:
+            await bot.send_message(chat_id, "Nenhum conteúdo publicado encontrado para sincronizar.", parse_mode="Markdown")
+            return
+            
+        metrics_repo = MetricsRepository(db)
+        ig_client = MetaGraphClient()
+        
+        text = "📊 *Relatório de Métricas (Últimos 5 posts):*\n\n"
+        
+        for content in published_contents:
+            res = await ig_client.get_media_insights(content.instagram_media_id)
+            if res.get("success"):
+                metrics_data = res.get("metrics", {})
+                updated_metric = metrics_repo.update_metrics(content.id, metrics_data, content.instagram_media_id)
+                
+                text += (
+                    f"• *ID #{content.id}* - {content.topic[:20]}...\n"
+                    f"  ❤️ Likes: {updated_metric.likes} | 💬 Comentários: {updated_metric.comments}\n"
+                    f"  🔄 Compart.: {updated_metric.shares} | 💾 Salvos: {updated_metric.saved}\n"
+                    f"  ▶️ Plays: {updated_metric.plays} | 📈 Reach: {updated_metric.reach}\n"
+                    f"  🔥 Engajamento: {updated_metric.engagement_rate or 'N/A'}\n\n"
+                )
+            else:
+                text += f"• *ID #{content.id}* - Erro ao puxar: {res.get('error')}\n\n"
+                
+        await bot.send_message(chat_id, text, reply_markup=get_main_menu_keyboard(), parse_mode="Markdown")
+        
+    except Exception as e:
+        await bot.send_message(chat_id, f"❌ Erro ao sincronizar métricas: {e}")
+    finally:
+        db.close()
+
+
 
 # Cache em memória das últimas oportunidades identificadas pelo Radar
 LATEST_RADAR_OPPORTUNITIES: Dict[str, Any] = {}
@@ -178,8 +227,12 @@ async def handle_radar(bot, chat_id: int, refresh: bool = False):
     profiles = profile_manager.list_profiles()
     profile_data = profiles[0] if profiles else None
 
+    from app.database.database import SessionLocal
+    db = SessionLocal()
     try:
-        report = await radar.run_daily_radar(profile_data=profile_data, top_k=4, refresh=refresh)
+        report = await radar.run_daily_radar(profile_data=profile_data, top_k=4, refresh=refresh, db=db)
+    finally:
+        db.close()
 
         # Salva em memória para permitir clique em qualquer oportunidade
         keyboard_buttons = []

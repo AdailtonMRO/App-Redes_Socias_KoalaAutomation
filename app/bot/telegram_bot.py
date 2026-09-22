@@ -14,6 +14,7 @@ from app.bot.handlers import (
     handle_perfis,
     handle_callback_query,
     handle_text_message,
+    handle_metrics,
 )
 
 
@@ -378,6 +379,8 @@ class TelegramBotService:
                 await handle_fila(self, chat_id)
             elif text in ("/perfis", "perfis", "Perfis"):
                 await handle_perfis(self, chat_id)
+            elif text in ("/metrics", "metrics", "Métricas", "/metricas", "metricas"):
+                await handle_metrics(self, chat_id)
             else:
                 # Encaminha texto para tratamento de fluxo interativo (tema personalizado, etc)
                 await handle_text_message(self, chat_id, text)

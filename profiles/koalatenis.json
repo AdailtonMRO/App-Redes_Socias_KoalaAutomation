@@ -5,37 +5,99 @@
   "username": "@koalatenis_",
   "instagram_account_id_env": "INSTAGRAM_ACCOUNT_ID",
   "instagram_token_env": "INSTAGRAM_ACCESS_TOKEN",
-  "niche": [
-    "tênis",
-    "tecnologia",
-    "DIY",
-    "engenharia"
-  ],
-  "audience": [
-    "tenistas amadores",
-    "professores de tênis",
-    "makers",
-    "entusiastas de tecnologia"
-  ],
-  "tone": [
-    "moderno",
-    "técnico",
-    "didático",
-    "descontraído"
-  ],
-  "objectives": [
-    "engajamento",
-    "autoridade",
-    "venda"
-  ],
-  "video_format": "9:16",
-  "preferred_duration": "20-30s",
-  "cta": "Conheça o projeto Koala Tênis no link da bio",
-  "avoid": [
-    "informações inventadas",
-    "promessas exageradas",
-    "preços não confirmados"
-  ],
-  "logo_path": "profiles/koalatenis_logo.png"
+  "logo_path": "profiles/koalatenis_logo.png",
+  "identity": {
+    "who_we_are": "Principal referência informativa e didática sobre o universo do tênis com foco em evolução.",
+    "audience": [
+      "tenistas amadores",
+      "professores de tênis",
+      "makers",
+      "entusiastas de tecnologia"
+    ],
+    "positioning": "Canal de autoridade em notícias, análises táticas e evolução no tênis.",
+    "authority": "Análises técnicas profundas baseadas em dados e biomecânica.",
+    "personality": "Educador, entusiasta e inovador."
+  },
+  "content": {
+    "pillars": [
+      "Tênis Profissional",
+      "Brasil no Circuito",
+      "Torneios & Resultados",
+      "Técnica & Biomecânica",
+      "Curiosidades",
+      "DIY e Tecnologia"
+    ],
+    "subthemes": [
+      "João Fonseca",
+      "Bia Haddad Maia",
+      "Luisa Stefani",
+      "Evolução tática",
+      "Máquinas de bolas"
+    ],
+    "priority_topics": [
+      "Grand Slams",
+      "Evolução técnica dos brasileiros",
+      "Biomecânica dos golpes"
+    ],
+    "secondary_topics": [
+      "Novas tecnologias no esporte",
+      "Bastidores da ATP/WTA"
+    ],
+    "forbidden_topics": [
+      "Fofocas de vestiário",
+      "Informações não confirmadas (fake news)",
+      "Promessas de resultados milagrosos"
+    ],
+    "formats": [
+      "REELS",
+      "STORIES",
+      "FEED",
+      "CAROUSEL"
+    ]
+  },
+  "business": {
+    "products": [
+      "Projeto da Máquina Lançadora de Bolas (DIY)"
+    ],
+    "services": [],
+    "offers": [],
+    "objectives": [
+      "Engajamento",
+      "Autoridade",
+      "Conversão para a bio"
+    ],
+    "ctas": [
+      "Conheça o projeto Koala Tênis no link da bio",
+      "Siga @koalatenis_ para mais conteúdo técnico"
+    ]
+  },
+  "style": {
+    "tone": [
+      "moderno",
+      "técnico",
+      "didático",
+      "descontraído"
+    ],
+    "vocabulary": [
+      "forehand",
+      "backhand",
+      "saque kick",
+      "topspin",
+      "biomecânica",
+      "tática"
+    ],
+    "rhythm": "rápido e direto ao ponto nos primeiros 3 segundos",
+    "aesthetics": "alta qualidade, cenas dinâmicas e letreiros legíveis",
+    "references": []
+  },
+  "strategy": {
+    "frequency": "diário",
+    "pillar_proportion": "40% Profissional, 30% Técnica, 20% Brasil, 10% DIY",
+    "content_objectives": [
+      "Aumentar o tempo de retenção nos Reels",
+      "Gerar discussões táticas no Feed",
+      "Atualizar rapidamente via Stories"
+    ],
+    "funnel_stage": "Meio de Funil (Consideração e Engajamento)"
+  }
 }
-
