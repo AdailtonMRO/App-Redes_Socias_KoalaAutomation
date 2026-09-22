@@ -9,6 +9,7 @@ def get_main_menu_keyboard():
     return {
         "inline_keyboard": [
             [{"text": "✨ Criar Publicação (/novo)", "callback_data": "menu_novo"}],
+            [{"text": "📡 Radar de Conteúdo (/radar)", "callback_data": "menu_radar"}],
             [
                 {"text": "📋 Fila de Aprovação", "callback_data": "menu_fila"},
                 {"text": "📜 Histórico", "callback_data": "menu_historico"},

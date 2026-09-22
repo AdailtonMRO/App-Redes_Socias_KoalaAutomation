@@ -4,6 +4,24 @@ Todas as alterações notáveis deste projeto são registradas neste arquivo.
 
 ---
 
+## [1.2.0] — 2026-09-22
+
+### 🤖 Governança de Agentes de IA
+- Criado o sistema formal de regras para agentes de IA em `.agents/rules/AI_AGENTS_DOCUMENTATION_AND_DEPLOY.md` com 8 regras inegociáveis cobrindo documentação, versionamento, segurança e deploy. (`governança`)
+- Adicionado template e primeiro ADR (ADR-001) em `docs/archive/` documentando a decisão arquitetural de adoção do sistema de governança. (`docs/archive/`)
+
+### 📚 Documentação
+- Especificação completa do Content Radar, contrato normalizado ResearchItem, cronograma diário e 6 pilares de conteúdo do Koala Tênis (`docs/18_CONTENT_RADAR.md`)
+- Criado `docs/19_DEPLOY_HOMELAB.md`: guia completo de deploy no servidor HomeLab (10.0.0.119), cobrindo deploy automático via GitHub Actions, deploy manual passo a passo, rollback, troubleshooting e checklist PRD. (`docs/`)
+- Atualizado `docs/00_INDEX.md`: adicionadas seções de Governança de Agentes de IA, ADR e tabela de scripts de automação. (`docs/00_INDEX.md`)
+- Atualizado `docs/00_REGRAS_E_DIRETRIZES.md`: adicionadas Seções 11 (Governança para Agentes de IA) e 12 (Deploy no HomeLab). (`docs/00_REGRAS_E_DIRETRIZES.md`)
+
+### 🛠️ Scripts de Automação
+- Criado `scripts/changelog_update.py`: script CLI para adicionar entradas padronizadas ao CHANGELOG sem edição manual. (`scripts/`)
+- Criado `scripts/pre_deploy_check.py`: script de validação automática que verifica VERSION, CHANGELOG, .env.example, ausência de credenciais hardcoded e existência de documentos obrigatórios antes de qualquer deploy. (`scripts/`)
+
+---
+
 ## [1.1.0] — 2026-09-21
 
 ### 🚀 Suporte a Múltiplos Formatos do Instagram (Carrossel, Reels, Stories, Feed)
@@ -20,6 +38,8 @@ Todas as alterações notáveis deste projeto são registradas neste arquivo.
 ## [1.0.0] — 2026-09-21
 
 ### 🚀 Novas Funcionalidades
+- Comando /radar e botão no menu principal com geração de publicação direta a partir das oportunidades selecionadas pelo Radar (`app/bot`)
+- Content Radar: Motor proativo de inteligência com arquitetura de adaptadores desacoplados (Google Trends, ATP, ITF, News) e foco estratégico na conversão para o projeto de Máquina Lançadora de Bolas DIY Koala Tênis (`app/research`)
 - **Painel Web de Configurações (`http://<IP>:8085`):** Interface Dark Studio com abas para Instagram & Meta, Google Gemini, Telegram Bot, Perfis de Automação, Diagnóstico e Tutorial Passo a Passo.
 - **Suporte Multi-Contas:** Capacidade de cadastrar e gerenciar múltiplas marcas do Instagram no mesmo servidor, cada uma com seu próprio ID, token e tom de voz.
 - **Botão de Teste Individual por Perfil:** Validação de conectividade direta de cada perfil com a Meta Graph API.

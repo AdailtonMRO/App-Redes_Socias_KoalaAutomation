@@ -145,6 +145,60 @@ async def handle_perfis(bot, chat_id: int):
     await bot.send_message(chat_id, text, reply_markup=reply_markup, parse_mode="Markdown")
 
 
+# Cache em memória das últimas oportunidades identificadas pelo Radar
+LATEST_RADAR_OPPORTUNITIES: Dict[str, Any] = {}
+
+
+async def handle_radar(bot, chat_id: int):
+    """Executa a varredura proativa do Content Radar e envia o briefing matinal com botões de ação."""
+    await bot.send_message(
+        chat_id,
+        "📡 *ATIVANDO CONTENT RADAR...*\n\n"
+        "Varrendo Google Trends, Circuito ATP, Regulamentos ITF e Notícias de Biomecânica.\n"
+        "O Google Gemini está avaliando as oportunidades para o universo *Koala Tênis* e *Máquina DIY*...\n"
+        "_(Aguarde alguns instantes)_",
+        parse_mode="Markdown",
+    )
+
+    from app.research.radar import ContentRadar
+    radar = ContentRadar()
+
+    profiles = profile_manager.list_profiles()
+    profile_data = profiles[0] if profiles else None
+
+    try:
+        report = await radar.run_daily_radar(profile_data=profile_data, top_k=4)
+
+        # Salva em memória para permitir clique em qualquer oportunidade
+        keyboard_buttons = []
+        for opp in report.top_opportunities:
+            LATEST_RADAR_OPPORTUNITIES[opp.id] = opp
+            btn_title = f"{opp.pillar.split()[0]} {opp.headline[:32]}..."
+            keyboard_buttons.append([{"text": btn_title, "callback_data": f"radar_create_{opp.id}"}])
+
+        keyboard_buttons.append([
+            {"text": "🔄 Atualizar Radar", "callback_data": "menu_radar"},
+            {"text": "⬅️ Menu Principal", "callback_data": "menu_start"},
+        ])
+
+        reply_markup = {"inline_keyboard": keyboard_buttons}
+
+        await bot.send_message(
+            chat_id,
+            report.summary_message,
+            reply_markup=reply_markup,
+            parse_mode="Markdown",
+        )
+    except Exception as e:
+        print(f"[ERROR] Falha ao executar Content Radar: {e}")
+        await bot.send_message(
+            chat_id,
+            f"❌ *Erro ao executar o Content Radar:*\n`{str(e)[:200]}`",
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode="Markdown",
+        )
+
+
 async def generate_and_send_content(bot, chat_id: int, profile_id: str, topic: str, content_format: str = "REELS"):
     """Orquestra a geração e o envio de mídia + card de aprovação para o Telegram."""
     fmt = content_format.upper()
@@ -304,6 +358,26 @@ async def handle_callback_query(bot, query: Dict[str, Any]):
         await handle_fila(bot, chat_id)
     elif data == "menu_perfis":
         await handle_perfis(bot, chat_id)
+    elif data == "menu_radar":
+        await handle_radar(bot, chat_id)
+
+    # Disparo de criação a partir do Radar de Conteúdo
+    elif data.startswith("radar_create_"):
+        opp_id = data.replace("radar_create_", "")
+        opp = LATEST_RADAR_OPPORTUNITIES.get(opp_id)
+        profiles = profile_manager.list_profiles()
+        profile_id = profiles[0].get("id") if profiles else "koalatenis"
+
+        if opp:
+            topic_with_angle = f"{opp.headline}: {opp.diy_ball_machine_angle}"
+            fmt = opp.suggested_format or "REELS"
+            await generate_and_send_content(bot, chat_id, profile_id, topic=topic_with_angle, content_format=fmt)
+        else:
+            await bot.send_message(
+                chat_id,
+                "⚠️ Oportunidade não encontrada no cache recente. Digite `/radar` para rodar uma nova varredura.",
+                parse_mode="Markdown",
+            )
 
     # Iniciar upload de logomarca para perfil
     elif data.startswith("upload_logo_"):

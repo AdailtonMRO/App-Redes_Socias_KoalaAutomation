@@ -12,6 +12,7 @@ from app.api.routers.health_router import router as health_router
 from app.api.routers.config_router import router as config_router
 from app.api.routers.profiles_router import router as profiles_router
 from app.api.routers.instagram_router import router as instagram_router
+from app.api.routers.radar_router import router as radar_router
 
 settings = get_settings()
 
@@ -55,6 +56,7 @@ app.include_router(health_router)
 app.include_router(config_router)
 app.include_router(profiles_router)
 app.include_router(instagram_router)
+app.include_router(radar_router)
 
 # Montagem de diretório de mídia gerada (vídeos, carrosséis, stories)
 media_dir = Path(settings.DATA_DIR).resolve()

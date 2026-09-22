@@ -357,6 +357,9 @@ class TelegramBotService:
                 await handle_start(self, chat_id)
             elif text in ("/novo", "novo", "Criar Reel"):
                 await handle_novo(self, chat_id)
+            elif text in ("/radar", "radar", "Radar"):
+                from app.bot.handlers import handle_radar
+                await handle_radar(self, chat_id)
             elif text in ("/status", "status", "Status"):
                 await handle_status(self, chat_id)
             elif text in ("/fila", "fila", "Fila"):

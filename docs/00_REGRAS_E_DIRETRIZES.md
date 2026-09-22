@@ -218,3 +218,60 @@ Sempre que a execução técnica encontrar um bloqueio que dependa de credenciai
    - `test:` Inclusão ou ajuste de testes
    - `chore:` Configurações, dependências ou CI/CD
 2. **Proteção de Branches:** Commits diretos na branch `main` são restritos aos merges de Pull Requests aprovados via esteira `start-release.yml` e `finish-release.yml`.
+
+---
+
+## 11. Regras de Governança para Agentes de IA
+
+O projeto adota um sistema formal de regras vinculantes para todos os **agentes de inteligência artificial** que atuam no desenvolvimento, manutenção e documentacão da aplicação.
+
+### 11.1 Arquivo de Regras Oficial
+
+O arquivo **`.agents/rules/AI_AGENTS_DOCUMENTATION_AND_DEPLOY.md`** é o documento oficial de governança para agentes de IA. Ele define:
+- **Regra 0:** Checklist mental pré-alteração
+- **Regra 1:** Documentação obrigatória (CHANGELOG + módulo + arquivo)
+- **Regra 2:** Versionamento semântico obrigatório (SemVer)
+- **Regra 3:** Preparação para deploy no HomeLab (automático e manual)
+- **Regra 4:** Estrutura de arquivos de documentação
+- **Regra 5:** Segurança de credenciais (inegociável)
+- **Regra 6:** Fluxo de trabalho padrão do agente (8 etapas)
+- **Regra 7:** Comunicação com o operador humano (relatório + STOP POINTs)
+- **Regra 8:** Manutenção periódica da documentação
+
+### 11.2 Arquivo de Decisões Arquiteturais (ADR)
+
+Decisões técnicas significativas devem ser registradas em `docs/archive/` usando o template `docs/archive/TEMPLATE_ADR.md`. Estes arquivos são **imutáveis** após criação.
+
+### 11.3 Scripts de Automação
+
+| Script | Propósito |
+| :--- | :--- |
+| `scripts/changelog_update.py` | Adiciona entrada padronizada ao CHANGELOG via CLI |
+| `scripts/pre_deploy_check.py` | Valida checklist de qualidade antes de qualquer deploy |
+
+---
+
+## 12. Regras de Deploy no Servidor HomeLab
+
+O servidor de produção do projeto é o **homelabaws** (IP: `10.0.0.119`). O guia completo de deploy é mantido em **`docs/19_DEPLOY_HOMELAB.md`**.
+
+### 12.1 Método Preferencial: Deploy Automático via CI/CD
+
+O deploy automático requer o **GitHub Actions runner self-hosted** ativo no servidor. Os workflows são acionados automaticamente:
+- `snapshot.yml` → Push em branches de desenvolvimento → Ambiente **DSV** (porta 8082)
+- `start-release.yml` → Pull Request para `main` → Ambientes **DSV** e **HMG** (portas 8082/8083)
+- `finish-release.yml` → Merge na `main` → Ambiente **PRD** (porta 8084)
+
+### 12.2 Método Fallback: Deploy Manual
+
+Quando o runner estiver inativo, executar no servidor:
+```bash
+ssh usuario@10.0.0.119
+cd /caminho/do/projeto
+git pull origin [branch]
+docker build -t localhost:5000/social-media-koala:[VERSAO] .
+docker compose up -d --force-recreate
+curl http://localhost:[PORTA]/health
+```
+
+> **Ver guia completo:** `docs/19_DEPLOY_HOMELAB.md` contém todos os passos, troubleshooting, rollback e checklist de produção.
