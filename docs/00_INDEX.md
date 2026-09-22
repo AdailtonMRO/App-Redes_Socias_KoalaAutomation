@@ -65,3 +65,4 @@ Este índice organiza todas as especificações técnicas, regras de desenvolvim
 | :--- | :--- | :--- |
 | `scripts/changelog_update.py` | Adiciona entrada padronizada ao CHANGELOG | `python scripts/changelog_update.py --version 1.2.0 --type feat --module app/research --description "Novo adapter"` |
 | `scripts/pre_deploy_check.py` | Valida checklist antes de qualquer deploy | `python scripts/pre_deploy_check.py --env prd --strict` |
+| `scripts/run_multimodal_pipeline.py` | Executa esteira multimodal de menor custo (Prompt -> Imagem 1K -> Vídeo 720p 4s) e calcula custos | `python scripts/run_multimodal_pipeline.py --topic "Treino de saque" --duration 4` |

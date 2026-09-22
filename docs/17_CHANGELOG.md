@@ -38,6 +38,7 @@ Todas as alterações notáveis deste projeto são registradas neste arquivo.
 ## [1.0.0] — 2026-09-21
 
 ### 🚀 Novas Funcionalidades
+- Esteira Multimodal de Menor Custo Operacional (gemini-3.1-flash-lite + gemini-3.1-flash-lite-image 1K + veo-3.1-lite Image-to-Video 720p 4s) com cálculo automático de custos e fallback FFmpeg cinemático (`app/ai`)
 - Comando /radar e botão no menu principal com geração de publicação direta a partir das oportunidades selecionadas pelo Radar (`app/bot`)
 - Content Radar: Motor proativo de inteligência com arquitetura de adaptadores desacoplados (Google Trends, ATP, ITF, News) e foco estratégico na conversão para o projeto de Máquina Lançadora de Bolas DIY Koala Tênis (`app/research`)
 - **Painel Web de Configurações (`http://<IP>:8085`):** Interface Dark Studio com abas para Instagram & Meta, Google Gemini, Telegram Bot, Perfis de Automação, Diagnóstico e Tutorial Passo a Passo.

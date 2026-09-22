@@ -42,3 +42,12 @@ O Google Gemini é responsável por atuar como o estrategista criativo da automa
 
 ## 4. Fallback e Mock Generator
 Para garantir que o fluxo de ponta a ponta e a esteira de CI/CD possam ser testados a qualquer momento sem consumo de cotas de API, o módulo `app/ai/gemini.py` possui um gerador sintético de alta fidelidade que entra em ação automaticamente caso a chave não esteja configurada ou ocorra instabilidade temporária na rede.
+
+---
+
+## 5. Esteira Multimodal de Menor Custo Operacional (Cost-Effective Pipeline)
+Implementada em `app/ai/multimodal_pipeline.py` com o script executável `scripts/run_multimodal_pipeline.py`:
+- **Etapa 1 (Otimização de Prompt):** `gemini-3.1-flash-lite` (US$ 0,0001 / execução) gera prompts estáticos e dinâmicos de física de movimento.
+- **Etapa 2 (Imagem Base 1K):** `gemini-3.1-flash-lite-image` / `imagen-3.0` (US$ 0,0336 / geração) cria o frame âncora em 1024x1024 ou 9:16.
+- **Etapa 3 (Vídeo Image-to-Video):** `veo-3.1-lite-generate-preview` / `veo-2.0` (US$ 0,05 / segundo = US$ 0,20 para 4 segundos) anima o frame base prevenindo distorções.
+- **Custo Total Estimado por Reel:** **~US$ 0,2337 (~R$ 1,36)** por publicação de vídeo vertical completa.
