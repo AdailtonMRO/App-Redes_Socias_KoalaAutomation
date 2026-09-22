@@ -1,0 +1,39 @@
+{
+  "id": "koalatenis",
+  "name": "Koala Tênis",
+  "platform": "instagram",
+  "username": "@koalatenis_",
+  "instagram_account_id_env": "INSTAGRAM_ACCOUNT_ID",
+  "instagram_token_env": "INSTAGRAM_ACCESS_TOKEN",
+  "niche": [
+    "tênis",
+    "tecnologia",
+    "DIY",
+    "engenharia"
+  ],
+  "audience": [
+    "tenistas amadores",
+    "professores de tênis",
+    "makers",
+    "entusiastas de tecnologia"
+  ],
+  "tone": [
+    "moderno",
+    "técnico",
+    "didático",
+    "descontraído"
+  ],
+  "objectives": [
+    "engajamento",
+    "autoridade",
+    "venda"
+  ],
+  "video_format": "9:16",
+  "preferred_duration": "20-30s",
+  "cta": "Conheça o projeto Koala Tênis no link da bio",
+  "avoid": [
+    "informações inventadas",
+    "promessas exageradas",
+    "preços não confirmados"
+  ]
+}

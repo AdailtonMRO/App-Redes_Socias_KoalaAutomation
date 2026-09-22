@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Koala Social Media Automation — Painel de Controle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">🐨</div>
+        <div class="brand-text">
+          <h1>Koala Auto</h1>
+          <span>Instagram AI Studio</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="tab-instagram">
+          <span class="icon">📸</span>
+          <span class="label">Instagram & Meta</span>
+        </button>
+        <button class="nav-item" data-tab="tab-ai">
+          <span class="icon">✨</span>
+          <span class="label">Google Gemini & Veo</span>
+        </button>
+        <button class="nav-item" data-tab="tab-telegram">
+          <span class="icon">✈️</span>
+          <span class="label">Telegram Bot</span>
+        </button>
+        <button class="nav-item" data-tab="tab-profiles">
+          <span class="icon">👤</span>
+          <span class="label">Perfis de Automação</span>
+        </button>
+        <button class="nav-item" data-tab="tab-system">
+          <span class="icon">⚡</span>
+          <span class="label">Status do Sistema</span>
+        </button>
+        <button class="nav-item" data-tab="tab-tutorial">
+          <span class="icon">📖</span>
+          <span class="label">Guia & Tutorial</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="status-indicator">
+          <span class="pulse-dot" id="system-health-dot"></span>
+          <span id="system-health-label">Verificando...</span>
+        </div>
+        <div class="version-tag">v1.0.0 (DSV)</div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <header class="topbar">
+        <div class="page-title">
+          <h2 id="current-tab-title">Configuração do Instagram & Meta</h2>
+          <p id="current-tab-subtitle">Conecte sua conta profissional do Instagram para automação de Reels</p>
+        </div>
+        <div class="topbar-actions">
+          <button id="btn-save-all" class="btn btn-primary">
+            <span class="btn-icon">💾</span> Salvar Configurações
+          </button>
+        </div>
+      </header>
+
+      <div class="content-body">
+        <!-- Toast Notification Area -->
+        <div id="toast" class="toast hidden"></div>
+
+        <!-- ABA 1: INSTAGRAM & META -->
+        <section id="tab-instagram" class="tab-pane active">
+          <div class="grid-2-col">
+            <!-- Form Card -->
+            <div class="card">
+              <div class="card-header">
+                <h3>Credenciais da Meta Graph API</h3>
+                <span class="badge badge-info">Requer Conta Profissional</span>
+              </div>
+              <div class="card-body">
+                <form id="form-instagram">
+                  <div class="form-group">
+                    <label for="ig-account-id">Instagram Business Account ID <span class="required">*</span></label>
+                    <input type="text" id="ig-account-id" placeholder="Ex: 17841400000000000" required>
+                    <small>O ID numérico da conta do Instagram obtido pelo Graph API Explorer.</small>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ig-access-token">User / System Access Token (Long-Lived) <span class="required">*</span></label>
+                    <input type="password" id="ig-access-token" placeholder="EAA..." required>
+                    <small>Token com escopos: <code>instagram_basic</code>, <code>instagram_content_publish</code>.</small>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="ig-app-id">Meta App ID (Opcional)</label>
+                      <input type="text" id="ig-app-id" placeholder="Ex: 123456789012345">
+                    </div>
+                    <div class="form-group">
+                      <label for="ig-app-secret">Meta App Secret (Opcional)</label>
+                      <input type="password" id="ig-app-secret" placeholder="••••••••••••••••">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ig-media-base-url">URL Base Pública para Vídeos (Opcional)</label>
+                    <input type="url" id="ig-media-base-url" placeholder="https://seu-dominio.com/media">
+                    <small>Necessário para a Meta fazer o download do Reel antes da publicação.</small>
+                  </div>
+
+                  <div class="form-actions">
+                    <button type="button" id="btn-test-instagram" class="btn btn-secondary">
+                      <span class="btn-icon">⚡</span> Testar Conexão com o Instagram
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Diagnostics Card -->
+            <div class="card">
+              <div class="card-header">
+                <h3>Diagnóstico de Conexão</h3>
+                <span id="ig-status-badge" class="badge badge-warning">Não testado</span>
+              </div>
+              <div class="card-body">
+                <div id="ig-test-result" class="diagnostic-box">
+                  <div class="diagnostic-empty">
+                    <div class="empty-icon">🔍</div>
+                    <p>Preencha as credenciais e clique em <strong>"Testar Conexão com o Instagram"</strong> para verificar se a API oficial da Meta autoriza a sua conta.</p>
+                  </div>
+                </div>
+
+                <div class="info-guide">
+                  <h4>💡 Como obter suas credenciais:</h4>
+                  <ol>
+                    <li>Vá no portal <a href="https://developers.facebook.com" target="_blank">Meta for Developers</a>.</li>
+                    <li>Crie um App do tipo <strong>Empresa / Business</strong>.</li>
+                    <li>Adicione o produto <strong>API do Graph do Instagram</strong>.</li>
+                    <li>Consulte o guia completo em <code>docs/11_INSTAGRAM.md</code>.</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ABA 2: GOOGLE AI (GEMINI & VEO) -->
+        <section id="tab-ai" class="tab-pane">
+          <div class="card">
+            <div class="card-header">
+              <h3>Configurações de Inteligência Artificial</h3>
+              <span class="badge badge-success">Google AI Studio</span>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label for="gemini-api-key">Google Gemini API Key <span class="required">*</span></label>
+                <input type="password" id="gemini-api-key" placeholder="AIzaSy...">
+                <small>Obtenha gratuitamente no <a href="https://aistudio.google.com" target="_blank">Google AI Studio</a>.</small>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="gemini-text-model">Modelo de Roteiro e Estratégia</label>
+                  <select id="gemini-text-model">
+                    <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (Recomendado - Rápido e Eficiente)</option>
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro (Raciocínio Profundo)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="veo-video-model">Modelo Gerador de Vídeo Vertical</label>
+                  <select id="veo-video-model">
+                    <option value="veo-2.0-generate-001" selected>Google Veo 2.0 (Vídeos 9:16)</option>
+                    <option value="mock-video-mode">Mock Generator (Modo Teste - Sem Custo)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ABA 3: TELEGRAM BOT -->
+        <section id="tab-telegram" class="tab-pane">
+          <div class="card">
+            <div class="card-header">
+              <h3>Controle Remoto e Aprovação via Telegram</h3>
+              <span class="badge badge-info">Interface Principal V1</span>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label for="telegram-bot-token">Telegram Bot Token <span class="required">*</span></label>
+                <input type="password" id="telegram-bot-token" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ">
+                <small>Crie seu bot conversando com o <a href="https://t.me/BotFather" target="_blank">@BotFather</a> no Telegram.</small>
+              </div>
+
+              <div class="form-group">
+                <label for="telegram-user-id">Telegram User ID Autorizado <span class="required">*</span></label>
+                <input type="text" id="telegram-user-id" placeholder="Ex: 123456789">
+                <small>Somente este ID poderá enviar comandos ao bot. Descubra o seu com <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a>.</small>
+              </div>
+
+              <div class="telegram-flow-preview">
+                <h4>Fluxo de Aprovação Humana no Telegram:</h4>
+                <div class="flow-steps">
+                  <span class="step">1. <code>/novo</code> no Telegram</span> →
+                  <span class="step">2. IA Gera Roteiro + Vídeo</span> →
+                  <span class="step highlight">3. Botão ✅ PUBLICAR</span> →
+                  <span class="step">4. Reel postado no Instagram</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ABA 4: PERFIS DE AUTOMAÇÃO -->
+        <section id="tab-profiles" class="tab-pane">
+          <div class="profiles-header">
+            <h3>Perfis Cadastrados</h3>
+            <button id="btn-new-profile" class="btn btn-secondary">+ Adicionar Novo Perfil</button>
+          </div>
+
+          <div id="profiles-grid" class="profiles-grid">
+            <!-- Cards de Perfis serão injetados aqui via app.js -->
+          </div>
+        </section>
+
+        <!-- ABA 5: STATUS DO SISTEMA -->
+        <section id="tab-system" class="tab-pane">
+          <div class="grid-2-col">
+            <div class="card">
+              <div class="card-header">
+                <h3>Saúde dos Componentes</h3>
+                <button id="btn-refresh-status" class="btn btn-sm btn-secondary">Atualizar</button>
+              </div>
+              <div class="card-body">
+                <div class="health-list" id="health-list">
+                  <div class="health-item">
+                    <span>Banco de Dados (SQLite)</span>
+                    <span id="health-db" class="status-badge badge-neutral">Checando...</span>
+                  </div>
+                  <div class="health-item">
+                    <span>Configuração do Telegram</span>
+                    <span id="health-tg" class="status-badge badge-neutral">Checando...</span>
+                  </div>
+                  <div class="health-item">
+                    <span>Configuração do Gemini</span>
+                    <span id="health-gemini" class="status-badge badge-neutral">Checando...</span>
+                  </div>
+                  <div class="health-item">
+                    <span>Configuração do Instagram</span>
+                    <span id="health-ig" class="status-badge badge-neutral">Checando...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3>Diretórios e Armazenamento</h3>
+              </div>
+              <div class="card-body">
+                <ul class="storage-info">
+                  <li><strong>Ambiente:</strong> <span id="sys-env">DSV</span></li>
+                  <li><strong>Porta da Aplicação:</strong> <code>8085</code></li>
+                  <li><strong>Diretório de Vídeos:</strong> <code>data/videos/</code></li>
+                  <li><strong>Diretório de Perfis:</strong> <code>profiles/</code></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ABA 6: GUIA E TUTORIAL PASSO A PASSO -->
+        <section id="tab-tutorial" class="tab-pane">
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header">
+              <h3>📸 Como Configurar o Instagram (Meta Graph API)</h3>
+              <span class="badge badge-info">Passo a Passo</span>
+            </div>
+            <div class="card-body" style="font-size: 13px; line-height: 1.7; color: var(--text-secondary);">
+              <ol style="padding-left: 20px;">
+                <li><strong style="color: #fff;">Conta Profissional:</strong> Abra o Instagram no celular > Perfil > Configurações > Altere para <em>Conta Profissional</em> (Comercial/Creator) e vincule a uma <em>Página do Facebook</em>.</li>
+                <li><strong style="color: #fff;">Meta for Developers:</strong> Entre em <a href="https://developers.facebook.com" target="_blank">developers.facebook.com</a> > <em>Meus Apps</em> > <em>Criar Aplicativo</em> > Tipo <strong>Empresa (Business)</strong>.</li>
+                <li><strong style="color: #fff;">Adicionar Produto:</strong> Adicione o produto <strong>API do Graph do Instagram</strong> ao aplicativo.</li>
+                <li><strong style="color: #fff;">Permissões no Explorer:</strong> Acesse o <a href="https://developers.facebook.com/tools/explorer/" target="_blank">Graph API Explorer</a>, selecione o seu App e adicione: <code>instagram_basic</code>, <code>instagram_content_publish</code>, <code>pages_show_list</code>, <code>pages_read_engagement</code>. Gere o token conectando sua conta.</li>
+                <li><strong style="color: #fff;">Instagram Account ID:</strong> No Explorer, consulte <code>me/accounts?fields=name,instagram_business_account{id,username}</code>. Copie o número do <code>id</code>.</li>
+                <li><strong style="color: #fff;">Token de 60 Dias:</strong> Abra o <a href="https://developers.facebook.com/tools/debug/accesstoken/" target="_blank">Access Token Debugger</a>, cole o token gerado e clique em <em>Estender Token de Acesso</em>.</li>
+                <li><strong style="color: #fff;">Inserir no Painel:</strong> Cole o Account ID e o Token na aba <em>Instagram & Meta</em> e clique em <em>Testar Conexão</em>!</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="grid-2-col">
+            <div class="card">
+              <div class="card-header">
+                <h3>✨ Google AI (Gemini & Veo)</h3>
+                <span class="badge badge-success">Google AI Studio</span>
+              </div>
+              <div class="card-body" style="font-size: 13px; line-height: 1.7; color: var(--text-secondary);">
+                <ol style="padding-left: 20px;">
+                  <li>Acesse o portal gratuito: <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a>.</li>
+                  <li>No menu esquerdo, clique em <strong>Get API key</strong>.</li>
+                  <li>Clique em <strong>Create API key</strong> e copie a chave gerada (começa com <code>AIzaSy...</code>).</li>
+                  <li>Cole na aba <em>Google Gemini & Veo</em> deste painel e salve!</li>
+                </ol>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3>✈️ Telegram Bot (Aprovação)</h3>
+                <span class="badge badge-info">Controle Remoto</span>
+              </div>
+              <div class="card-body" style="font-size: 13px; line-height: 1.7; color: var(--text-secondary);">
+                <ol style="padding-left: 20px;">
+                  <li>No Telegram, converse com o <a href="https://t.me/BotFather" target="_blank">@BotFather</a> e digite <code>/newbot</code>. Defina o nome e username do bot.</li>
+                  <li>Copie o <strong>HTTP API Token</strong> fornecido.</li>
+                  <li>Converse com o <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a> no Telegram para descobrir o seu <strong>Id</strong> numérico pessoal.</li>
+                  <li>Cole ambos na aba <em>Telegram Bot</em> deste painel e salve!</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top: 24px;">
+            <div class="card-header">
+              <h3>📱 Formatos de Publicação Suportados</h3>
+              <span class="badge badge-warning">Multi-Formato</span>
+            </div>
+            <div class="card-body" style="font-size: 13px; line-height: 1.7; color: var(--text-secondary);">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                <div style="background: var(--bg-tertiary, #1e293b); padding: 16px; border-radius: 8px;">
+                  <strong style="color: #38bdf8; font-size: 15px;">🎬 Reels (9:16)</strong>
+                  <p style="margin-top: 6px;">Vídeo dinâmico de 15s com gancho irresistível nos primeiros 3s, renderizado em alta definição.</p>
+                </div>
+                <div style="background: var(--bg-tertiary, #1e293b); padding: 16px; border-radius: 8px;">
+                  <strong style="color: #38bdf8; font-size: 15px;">📱 Stories (9:16)</strong>
+                  <p style="margin-top: 6px;">Conteúdo vertical rápido para conexão diária, enquetes interativas e caixinhas de perguntas.</p>
+                </div>
+                <div style="background: var(--bg-tertiary, #1e293b); padding: 16px; border-radius: 8px;">
+                  <strong style="color: #38bdf8; font-size: 15px;">🖼️ Feed Post (1:1)</strong>
+                  <p style="margin-top: 6px;">Post de imagem única de autoridade com manchete marcante e legenda estruturada para debate.</p>
+                </div>
+                <div style="background: var(--bg-tertiary, #1e293b); padding: 16px; border-radius: 8px;">
+                  <strong style="color: #38bdf8; font-size: 15px;">📚 Carrossel (1:1)</strong>
+                  <p style="margin-top: 6px;">Álbum multi-slides (4 a 7 telas) didático e altamente 'salvável', com pré-visualização completa no Telegram.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal para Perfil -->
+  <div id="profile-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-profile-title">Perfil de Automação</h3>
+        <button id="modal-close" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-profile-modal">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prof-id">ID / Slug <span class="required">*</span></label>
+              <input type="text" id="prof-id" placeholder="ex: koalatenis" required>
+            </div>
+            <div class="form-group">
+              <label for="prof-name">Nome da Marca <span class="required">*</span></label>
+              <input type="text" id="prof-name" placeholder="ex: Koala Tênis" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prof-username">Username Instagram <span class="required">*</span></label>
+              <input type="text" id="prof-username" placeholder="ex: @koalatenis_" required>
+            </div>
+            <div class="form-group">
+              <label for="prof-ig-account-id">Instagram Account ID (Numérico)</label>
+              <input type="text" id="prof-ig-account-id" placeholder="ex: 17841400000000000">
+              <small>ID numérico desta conta específica do Instagram.</small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="prof-ig-access-token">Token Específico da Conta (Opcional)</label>
+            <input type="password" id="prof-ig-access-token" placeholder="EAA... (Se vazio, usa o token global do sistema)">
+            <small>Preencha apenas se esta conta estiver em um Facebook diferente do principal.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="prof-niche">Nichos de Atuação (separados por vírgula)</label>
+            <input type="text" id="prof-niche" placeholder="ex: tênis, tecnologia, makers, DIY">
+          </div>
+
+          <div class="form-group">
+            <label for="prof-tone">Tom de Voz (separados por vírgula)</label>
+            <input type="text" id="prof-tone" placeholder="ex: moderno, técnico, didático, descontraído">
+          </div>
+
+          <div class="form-group">
+            <label for="prof-cta">Chamada para Ação (CTA)</label>
+            <input type="text" id="prof-cta" placeholder="ex: Conheça o curso Koala Tênis no link da bio">
+          </div>
+
+          <div class="form-group">
+            <label for="prof-avoid">Regras de Restrição / O que evitar (separados por vírgula)</label>
+            <input type="text" id="prof-avoid" placeholder="ex: promessas exageradas, dados inventados">
+          </div>
+
+          <div class="form-group" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px dashed var(--border-color);">
+            <label for="prof-logo-file">Logomarca Oficial (PNG/JPG com fundo transparente recomendado)</label>
+            <div style="display: flex; gap: 14px; align-items: center; margin-top: 8px;">
+              <input type="file" id="prof-logo-file" accept="image/png, image/jpeg, image/webp" style="flex: 1;">
+              <div id="prof-logo-preview-container" style="width: 52px; height: 52px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; overflow: hidden; background: #0b1120;">
+                <img id="prof-logo-preview" src="" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain; display: none;">
+                <span id="prof-logo-preview-placeholder" style="font-size: 24px;">🐨</span>
+              </div>
+            </div>
+            <small style="display: block; margin-top: 6px; color: var(--text-muted);">Esta logomarca será aplicada automaticamente em todas as criações (Reels, Feed, Stories e Carrosséis).</small>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" id="btn-cancel-modal" class="btn btn-secondary">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar Perfil</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

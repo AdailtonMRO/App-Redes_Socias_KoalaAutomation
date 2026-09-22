@@ -1,0 +1,73 @@
+name: Redeploy / Rollback Manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versao ou tag da imagem (ex: 1.0.0, snapshot-latest, 1.0.0-RC.1)"
+        required: true
+        default: "snapshot-latest"
+      environment:
+        description: "Ambiente para redeploy"
+        required: true
+        type: choice
+        options:
+          - DSV
+          - HMG
+          - PRD
+
+jobs:
+  redeploy:
+    name: Executar Redeploy
+    runs-on: [self-hosted, deploy-linux-x64]
+
+    steps:
+      - name: Checkout do Repositorio
+        uses: actions/checkout@v4
+
+      - name: Validar Existencia da Imagem no Registry
+        run: |
+          docker pull localhost:5000/social-media-koala:${{ github.event.inputs.version }}
+
+      - name: Mapear Variaveis por Ambiente
+        id: env_vars
+        run: |
+          ENV="${{ github.event.inputs.environment }}"
+          if [ "$ENV" = "DSV" ]; then
+            echo "CONTAINER_NAME=social-media-koala-dsv" >> $GITHUB_ENV
+            echo "PORT=8082" >> $GITHUB_ENV
+          elif [ "$ENV" = "HMG" ]; then
+            echo "CONTAINER_NAME=social-media-koala-hmg" >> $GITHUB_ENV
+            echo "PORT=8083" >> $GITHUB_ENV
+          else
+            echo "CONTAINER_NAME=social-media-koala-prd" >> $GITHUB_ENV
+            echo "PORT=8084" >> $GITHUB_ENV
+          fi
+
+      - name: Recriar Container
+        run: |
+          docker rm -f ${{ env.CONTAINER_NAME }} || true
+          docker run -d \
+            --name ${{ env.CONTAINER_NAME }} \
+            --restart unless-stopped \
+            --network koala-network \
+            -p ${{ env.PORT }}:8080 \
+            -e ENVIRONMENT=${{ github.event.inputs.environment }} \
+            -e APP_PORT=8080 \
+            -v $(pwd)/data:/app/data \
+            -v $(pwd)/profiles:/app/profiles \
+            localhost:5000/social-media-koala:${{ github.event.inputs.version }}
+
+      - name: Validar Healthcheck
+        run: |
+          echo "Aguardando healthcheck na porta ${{ env.PORT }}..."
+          for i in {1..10}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.PORT }}/health || true)
+            if [ "$STATUS" -eq 200 ]; then
+              echo "Redeploy OK (HTTP 200)!"
+              exit 0
+            fi
+            sleep 4
+          done
+          echo "Healthcheck FALHOU no redeploy!"
+          exit 1

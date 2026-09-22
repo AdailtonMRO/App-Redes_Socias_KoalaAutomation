@@ -1,0 +1,78 @@
+name: Build e Deploy Snapshot (DSV)
+
+on:
+  push:
+    branches-ignore:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy-snapshot:
+    name: Snapshot Build & Deploy
+    runs-on: [self-hosted, build-linux-x64]
+
+    steps:
+      - name: Checkout do Repositorio
+        uses: actions/checkout@v4
+
+      - name: Leitura de Versao Semantica
+        id: get_version
+        run: |
+          VERSION=$(cat VERSION | tr -d '\r\n')
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "SNAPSHOT_TAG=${VERSION}-${{ github.run_number }}-SNAPSHOT" >> $GITHUB_ENV
+
+      - name: Garantir Rede Docker
+        run: |
+          docker network inspect koala-network >/dev/null 2>&1 || docker network create koala-network
+
+      - name: Build da Imagem Docker
+        run: |
+          docker build -t localhost:5000/social-media-koala:${{ env.SNAPSHOT_TAG }} \
+                       -t localhost:5000/social-media-koala:snapshot-latest .
+
+      - name: Push para o Registry Local
+        run: |
+          docker push localhost:5000/social-media-koala:${{ env.SNAPSHOT_TAG }}
+          docker push localhost:5000/social-media-koala:snapshot-latest
+
+      - name: Deploy no Ambiente DSV
+        run: |
+          # Para container anterior se existir
+          docker rm -f social-media-koala-dsv || true
+
+          # Sobe novo container em DSV na porta 8082
+          docker run -d \
+            --name social-media-koala-dsv \
+            --restart unless-stopped \
+            --network koala-network \
+            -p 8082:8080 \
+            -e ENVIRONMENT=DSV \
+            -e APP_PORT=8080 \
+            -v $(pwd)/data:/app/data \
+            -v $(pwd)/profiles:/app/profiles \
+            localhost:5000/social-media-koala:${{ env.SNAPSHOT_TAG }}
+
+      - name: Validacao de Healthcheck com Retry
+        run: |
+          echo "Aguardando inicializacao e checando healthcheck..."
+          for i in {1..12}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8082/health || true)
+            if [ "$STATUS" -eq 200 ]; then
+              echo "Healthcheck OK (HTTP 200)!"
+              exit 0
+            fi
+            echo "Tentativa $i: Status $STATUS. Aguardando 5s..."
+            sleep 5
+          done
+          echo "Healthcheck FALHOU no ambiente DSV!"
+          docker logs social-media-koala-dsv --tail 50
+          exit 1
+
+      - name: Gerar Sumario da Execucao
+        run: |
+          echo "### 🚀 Deploy Snapshot Realizado com Sucesso!" >> $GITHUB_STEP_SUMMARY
+          echo "- **Versao:** \`${{ env.SNAPSHOT_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Ambiente:** DSV" >> $GITHUB_STEP_SUMMARY
+          echo "- **Porta Externa:** [http://localhost:8082](http://localhost:8082)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Healthcheck:** \`/health\` (HTTP 200)" >> $GITHUB_STEP_SUMMARY

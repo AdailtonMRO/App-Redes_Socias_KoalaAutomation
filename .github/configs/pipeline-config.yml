@@ -1,0 +1,24 @@
+metadata:
+  applicationCode: "A25031"
+  applicationName: "social-media-koala-automation"
+  team: "Koala Engineering"
+  stack: "python-fastapi"
+
+build:
+  dockerfile: "Dockerfile"
+  context: "."
+  internalPort: 8080
+  healthcheckPath: "/health"
+
+registry:
+  host: "localhost:5000"
+  insecure: true
+
+quality:
+  sonarqube: false
+  sast: false
+  dast: false
+
+network:
+  name: "koala-network"
+  driver: "bridge"

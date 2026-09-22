@@ -1,0 +1,74 @@
+name: Start Release Candidate (DSV & HMG)
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, reopened, synchronize ]
+
+jobs:
+  build-and-deploy-rc:
+    name: Build RC e Deploy Simultaneo DSV/HMG
+    runs-on: [self-hosted, build-linux-x64]
+
+    steps:
+      - name: Checkout do Repositorio
+        uses: actions/checkout@v4
+
+      - name: Leitura de Versao Semantica
+        id: get_version
+        run: |
+          VERSION=$(cat VERSION | tr -d '\r\n')
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "RC_TAG=${VERSION}-RC.${{ github.run_number }}" >> $GITHUB_ENV
+
+      - name: Build da Imagem Release Candidate
+        run: |
+          docker build -t localhost:5000/social-media-koala:${{ env.RC_TAG }} .
+          docker push localhost:5000/social-media-koala:${{ env.RC_TAG }}
+
+      - name: Deploy em DSV (Porta 8082)
+        run: |
+          docker rm -f social-media-koala-dsv || true
+          docker run -d \
+            --name social-media-koala-dsv \
+            --restart unless-stopped \
+            --network koala-network \
+            -p 8082:8080 \
+            -e ENVIRONMENT=DSV \
+            -v $(pwd)/data:/app/data \
+            -v $(pwd)/profiles:/app/profiles \
+            localhost:5000/social-media-koala:${{ env.RC_TAG }}
+
+      - name: Deploy em HMG (Porta 8083)
+        run: |
+          docker rm -f social-media-koala-hmg || true
+          docker run -d \
+            --name social-media-koala-hmg \
+            --restart unless-stopped \
+            --network koala-network \
+            -p 8083:8080 \
+            -e ENVIRONMENT=HMG \
+            -v $(pwd)/data:/app/data \
+            -v $(pwd)/profiles:/app/profiles \
+            localhost:5000/social-media-koala:${{ env.RC_TAG }}
+
+      - name: Validar Healthchecks em DSV e HMG
+        run: |
+          for port in 8082 8083; do
+            echo "Verificando porta $port..."
+            for i in {1..10}; do
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$port/health || true)
+              if [ "$STATUS" -eq 200 ]; then
+                echo "Porta $port OK!"
+                break
+              fi
+              sleep 3
+            done
+          done
+
+      - name: Gerar Sumario Release Candidate
+        run: |
+          echo "### 📦 Release Candidate Disponivel para Testes" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag RC:** \`${{ env.RC_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **DSV:** [http://localhost:8082](http://localhost:8082)" >> $GITHUB_STEP_SUMMARY
+          echo "- **HMG:** [http://localhost:8083](http://localhost:8083)" >> $GITHUB_STEP_SUMMARY

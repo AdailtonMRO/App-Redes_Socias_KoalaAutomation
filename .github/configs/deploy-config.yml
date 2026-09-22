@@ -1,0 +1,46 @@
+application:
+  code: "A25031"
+  name: "social-media-koala-automation"
+  internalPort: 8080
+  healthcheckPath: "/health"
+  registry: "localhost:5000"
+
+environments:
+  DSV:
+    containerName: "social-media-koala-dsv"
+    externalPort: 8082
+    network: "koala-network"
+    replicas: 1
+    resources:
+      cpu: "1.0"
+      memory: "1024M"
+    env:
+      ENVIRONMENT: "DSV"
+      APP_PORT: "8080"
+      LOG_LEVEL: "DEBUG"
+
+  HMG:
+    containerName: "social-media-koala-hmg"
+    externalPort: 8083
+    network: "koala-network"
+    replicas: 1
+    resources:
+      cpu: "1.5"
+      memory: "2048M"
+    env:
+      ENVIRONMENT: "HMG"
+      APP_PORT: "8080"
+      LOG_LEVEL: "INFO"
+
+  PRD:
+    containerName: "social-media-koala-prd"
+    externalPort: 8084
+    network: "koala-network"
+    replicas: 1
+    resources:
+      cpu: "2.0"
+      memory: "2048M"
+    env:
+      ENVIRONMENT: "PRD"
+      APP_PORT: "8080"
+      LOG_LEVEL: "INFO"

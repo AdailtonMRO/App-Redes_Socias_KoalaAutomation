@@ -1,0 +1,72 @@
+name: Finish Release (Producao - PRD)
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy-production:
+    name: Deploy em Producao (PRD)
+    runs-on: [self-hosted, deploy-linux-x64]
+
+    steps:
+      - name: Checkout do Repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Leitura da Versao
+        id: get_version
+        run: |
+          VERSION=$(cat VERSION | tr -d '\r\n')
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Criacao de Tag Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ env.VERSION }}" -m "Release versao ${{ env.VERSION }}" || true
+          git push origin "v${{ env.VERSION }}" || true
+
+      - name: Build e Retag Imagens Oficiais
+        run: |
+          docker build -t localhost:5000/social-media-koala:${{ env.VERSION }} \
+                       -t localhost:5000/social-media-koala:latest .
+          docker push localhost:5000/social-media-koala:${{ env.VERSION }}
+          docker push localhost:5000/social-media-koala:latest
+
+      - name: Deploy no Ambiente PRD (Porta 8084)
+        run: |
+          docker rm -f social-media-koala-prd || true
+          docker run -d \
+            --name social-media-koala-prd \
+            --restart unless-stopped \
+            --network koala-network \
+            -p 8084:8080 \
+            -e ENVIRONMENT=PRD \
+            -e APP_PORT=8080 \
+            -v $(pwd)/data:/app/data \
+            -v $(pwd)/profiles:/app/profiles \
+            localhost:5000/social-media-koala:${{ env.VERSION }}
+
+      - name: Validar Healthcheck em PRD
+        run: |
+          echo "Validando saúde em PRD na porta 8084..."
+          for i in {1..12}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8084/health || true)
+            if [ "$STATUS" -eq 200 ]; then
+              echo "PRD OK (HTTP 200)!"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "FALHA no healthcheck de PRD!"
+          docker logs social-media-koala-prd --tail 50
+          exit 1
+
+      - name: Sumario de Producao
+        run: |
+          echo "### 🌟 Release Publicada em Producao (PRD)!" >> $GITHUB_STEP_SUMMARY
+          echo "- **Versao Oficial:** \`v${{ env.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Porta:** [http://localhost:8084](http://localhost:8084)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Healthcheck:** \`/health\` (HTTP 200)" >> $GITHUB_STEP_SUMMARY
