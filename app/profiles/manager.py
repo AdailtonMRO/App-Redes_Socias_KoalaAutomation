@@ -65,6 +65,26 @@ class ProfileSchema(BaseModel):
     style: StyleSchema = Field(default_factory=StyleSchema)
     strategy: StrategySchema = Field(default_factory=StrategySchema)
 
+    @property
+    def niche(self) -> List[str]:
+        return self.content.pillars
+
+    @property
+    def audience(self) -> List[str]:
+        return self.identity.audience
+
+    @property
+    def tone(self) -> List[str]:
+        return self.style.tone
+
+    @property
+    def cta(self) -> str:
+        return self.business.ctas[0] if self.business.ctas else ""
+
+    @property
+    def avoid(self) -> List[str]:
+        return self.content.forbidden_topics
+
 
 class ProfileManager:
     def __init__(self, profiles_dir: Optional[str] = None):

@@ -231,8 +231,6 @@ async def handle_radar(bot, chat_id: int, refresh: bool = False):
     db = SessionLocal()
     try:
         report = await radar.run_daily_radar(profile_data=profile_data, top_k=4, refresh=refresh, db=db)
-    finally:
-        db.close()
 
         # Salva em memória para permitir clique em qualquer oportunidade
         keyboard_buttons = []
@@ -262,6 +260,8 @@ async def handle_radar(bot, chat_id: int, refresh: bool = False):
             reply_markup=get_main_menu_keyboard(),
             parse_mode="Markdown",
         )
+    finally:
+        db.close()
 
 
 async def generate_and_send_content(bot, chat_id: int, profile_id: str, topic: str, content_format: str = "REELS"):

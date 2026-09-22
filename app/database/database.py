@@ -49,4 +49,5 @@ def get_db():
 
 def init_db():
     """Inicializa as tabelas do banco de dados se não existirem."""
+    import app.database.models  # noqa: F401
     Base.metadata.create_all(bind=engine)

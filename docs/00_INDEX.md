@@ -43,6 +43,7 @@ Este índice organiza todas as especificações técnicas, regras de desenvolvim
 - **[16_OPERATIONS.md](file:///c:/Users/Adail/Documents/App%20Redes_Socias_KoalaAutomation/docs/16_OPERATIONS.md)**: Guia de operação diária, rotinas de backup e monitoramento.
 - **[17_CHANGELOG.md](file:///c:/Users/Adail/Documents/App%20Redes_Socias_KoalaAutomation/docs/17_CHANGELOG.md)**: Registro histórico de versões e modificações.
 - **[18_CONTENT_RADAR.md](file:///c:/Users/Adail/Documents/App%20Redes_Socias_KoalaAutomation/docs/18_CONTENT_RADAR.md)**: **Content Radar: Motor Proativo de Inteligência de Conteúdo, Adapters e Foco DIY Máquina de Bolas**.
+- **[20_ARQUITETURA_ALVO_KOALA_AUTOMATION.md](file:///c:/Users/Adail/Documents/App%20Redes_Socias_KoalaAutomation/docs/20_ARQUITETURA_ALVO_KOALA_AUTOMATION.md)**: **Arquitetura Alvo e Roadmap de Evolução V1 → V2 (Cérebro Editorial, Persistência, Métricas e Learning Loop)**.
 
 ---
 

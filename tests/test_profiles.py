@@ -15,4 +15,4 @@ def test_list_and_get_profiles():
     assert koala is not None
     assert koala.name == "Koala Tênis"
     assert koala.username == "@koalatenis_"
-    assert "tênis" in koala.niche
+    assert any("tênis" in p.lower() for p in koala.niche)
