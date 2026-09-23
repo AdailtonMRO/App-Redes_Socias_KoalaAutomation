@@ -12,6 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
+    BASE_DIR: Path = BASE_DIR
     # Ambiente geral
     ENVIRONMENT: str = "DSV"
     APP_PORT: int = 8080

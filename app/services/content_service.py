@@ -11,7 +11,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional, List
-from app.config import get_settings
+from app.config import get_settings, BASE_DIR
 from app.profiles.manager import ProfileManager
 from app.database.database import SessionLocal
 from app.database.models import ContentStatus, ContentModel, GenerationModel, ActionModel
@@ -74,11 +74,11 @@ class ContentOrchestrator:
             if profile and profile.logo_path:
                 cand = Path(profile.logo_path)
                 if not cand.is_absolute():
-                    cand = Path(settings.BASE_DIR) / cand
+                    cand = BASE_DIR / cand
                 if cand.exists():
                     logo_path = str(cand)
             if not logo_path:
-                default_cand = Path(settings.BASE_DIR) / "profiles" / "koalatenis_logo.png"
+                default_cand = BASE_DIR / "profiles" / "koalatenis_logo.png"
                 if default_cand.exists():
                     logo_path = str(default_cand)
 
