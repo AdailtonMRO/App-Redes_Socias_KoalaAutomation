@@ -235,8 +235,7 @@ class FFmpegProcessor:
         if has_logo:
             # Redimensiona o logo proporcionalmente com largura ~240px
             chains.append(f"[{logo_idx}:v]scale=240:-1[logo_s]")
-            post_filters.append("[base_composite]")
-            chains.append(",".join(post_filters))
+            chains.append(",".join(post_filters) + "[base_composite]")
             # Aplica overlay na parte inferior direita (margem de 50px da borda)
             chains.append("[base_composite][logo_s]overlay=x=w-overlay_w-50:y=h-overlay_h-50")
         else:

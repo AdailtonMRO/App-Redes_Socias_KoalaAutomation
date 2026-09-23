@@ -297,6 +297,10 @@ async def generate_and_send_content(bot, chat_id: int, profile_id: str, topic: s
     caption = res.get("caption", "")
     hashtags = res.get("hashtags", "")
 
+    safe_topic = str(topic).replace("_", " ").replace("*", "").replace("`", "")
+    safe_title = str(title).replace("_", " ").replace("*", "").replace("`", "")
+    safe_hook = str(hook).replace("_", " ").replace("*", "").replace("`", "")
+
     # Card descritivo com decisão humana
     card_text = (
         f"🎯 *NOVO CONTEÚDO AGUARDANDO SUA APROVAÇÃO*\n"
@@ -304,9 +308,9 @@ async def generate_and_send_content(bot, chat_id: int, profile_id: str, topic: s
         f"📱 *Formato:* {fmt_title}\n"
         f"👤 *Perfil:* `@{profile_username}`\n"
         f"📌 *ID:* `#{content_id}`\n\n"
-        f"💡 *Tema:* _{topic}_\n"
-        f"🎬 *Título:* *{title}*\n"
-        f"🪝 *Gancho:* _{hook}_\n\n"
+        f"💡 *Tema:* _{safe_topic}_\n"
+        f"🎬 *Título:* *{safe_title}*\n"
+        f"🪝 *Gancho:* _{safe_hook}_\n\n"
         f"📝 *Legenda Sugerida:*\n{caption[:350]}...\n\n"
         f"🏷️ *Hashtags:*\n`{hashtags}`\n\n"
         f"⚠️ *Ação Obrigatória:* Avalie o material gerado acima antes de autorizar a publicação na Meta API."
@@ -319,7 +323,7 @@ async def generate_and_send_content(bot, chat_id: int, profile_id: str, topic: s
             sent = await bot.send_video(
                 chat_id=chat_id,
                 video_path=video_path,
-                caption=f"🎬 Prévia do Reel #{content_id}\nTema: {topic}",
+                caption=f"🎬 Prévia do Reel #{content_id}\nTema: {safe_topic}",
                 reply_markup=get_approval_keyboard(content_id),
             )
             if not sent:
@@ -334,7 +338,7 @@ async def generate_and_send_content(bot, chat_id: int, profile_id: str, topic: s
             await bot.send_media_group(
                 chat_id=chat_id,
                 photo_paths=slide_images,
-                caption=f"📚 Álbum Carrossel ({len(slide_images)} slides) para @{profile_username}\nTema: {topic}",
+                caption=f"📚 Álbum Carrossel ({len(slide_images)} slides) para @{profile_username}\nTema: {safe_topic}",
             )
 
         # 2. Envia a mensagem de revisão e aprovação com os botões de ação
@@ -432,6 +436,30 @@ async def handle_callback_query(bot, query: Dict[str, Any]):
     elif data.startswith("radar_create_"):
         opp_id = data.replace("radar_create_", "")
         opp = LATEST_RADAR_OPPORTUNITIES.get(opp_id)
+        if not opp:
+            # Fallback para o banco de dados caso o container tenha reiniciado
+            from app.database.database import SessionLocal
+            from app.database.models import ContentOpportunityModel
+            db = SessionLocal()
+            try:
+                opp_model = db.query(ContentOpportunityModel).filter_by(id=opp_id).first()
+                if opp_model:
+                    from app.research.models import ContentOpportunity
+                    opp = ContentOpportunity(
+                        id=opp_model.id,
+                        headline=opp_model.headline,
+                        news_summary=opp_model.news_summary or "",
+                        theme=opp_model.theme or "",
+                        source_reference=opp_model.source_reference or "",
+                        pillar=opp_model.pillar or "",
+                        relevance_score=opp_model.relevance_score or 8,
+                        key_takeaway=opp_model.key_takeaway or "",
+                        suggested_format=opp_model.suggested_format or "STORIES",
+                        why_it_matters=opp_model.why_it_matters or "",
+                    )
+            finally:
+                db.close()
+
         profiles = profile_manager.list_profiles()
         profile_id = profiles[0].get("id") if profiles else "koalatenis"
 

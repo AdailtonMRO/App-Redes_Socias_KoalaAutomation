@@ -34,8 +34,8 @@ class StoryScriptSchema(BaseModel):
     format: str = Field("STORIES", validation_alias=AliasChoices("format", "formato"))
     title: str = Field("Story Koala Tênis", validation_alias=AliasChoices("title", "titulo", "tema"))
     stickers_recommended: List[str] = Field(default_factory=list, validation_alias=AliasChoices("stickers_recommended", "adesivos", "stickers"))
-    hook: str = Field(..., validation_alias=AliasChoices("hook", "gancho", "frase_impacto"))
-    body: str = Field(default="", validation_alias=AliasChoices("body", "texto", "mensagem", "corpo"))
+    hook: str = Field(default="Radar de Notícias", validation_alias=AliasChoices("hook", "gancho", "frase_impacto", "headline", "manchete", "title", "titulo"))
+    body: str = Field(default="", validation_alias=AliasChoices("body", "texto", "mensagem", "corpo", "summary", "resumo", "news_summary", "conteudo"))
     visual_prompt: str = Field(default="Vertical 9:16 tennis lifestyle", validation_alias=AliasChoices("visual_prompt", "prompt_visual", "prompt"))
     call_to_action: str = Field(default="Responda aqui!", validation_alias=AliasChoices("call_to_action", "cta", "chamada_para_acao"))
 
@@ -44,7 +44,7 @@ class StoryScriptSchema(BaseModel):
 class FeedPostSchema(BaseModel):
     format: str = Field("FEED", validation_alias=AliasChoices("format", "formato"))
     title: str = Field("Post Koala Tênis", validation_alias=AliasChoices("title", "titulo", "tema"))
-    headline: str = Field(..., validation_alias=AliasChoices("headline", "manchete", "titulo_capa"))
+    headline: str = Field(default="Dica de Tênis", validation_alias=AliasChoices("headline", "manchete", "titulo_capa", "title", "titulo", "hook"))
     visual_prompt: str = Field(default="High quality tennis court photography 1:1", validation_alias=AliasChoices("visual_prompt", "prompt_visual", "prompt"))
     caption: str = Field(default="", validation_alias=AliasChoices("caption", "legenda", "texto"))
     hashtags: List[str] = Field(default_factory=list, validation_alias=AliasChoices("hashtags", "tags"))
@@ -54,7 +54,7 @@ class FeedPostSchema(BaseModel):
 # --- ESQUEMA PARA POST CARROSSEL (SLIDES 1:1) ---
 class CarouselSlideSchema(BaseModel):
     slide_number: int = Field(default=1, validation_alias=AliasChoices("slide_number", "numero", "slide"))
-    slide_title: str = Field(..., validation_alias=AliasChoices("slide_title", "titulo", "slide_titulo"))
+    slide_title: str = Field("Dica", validation_alias=AliasChoices("slide_title", "titulo", "slide_titulo"))
     slide_body: str = Field(default="", validation_alias=AliasChoices("slide_body", "texto", "conteudo"))
     visual_prompt: str = Field(default="Minimalist sports slide layout", validation_alias=AliasChoices("visual_prompt", "prompt_visual", "prompt"))
 
@@ -62,7 +62,7 @@ class CarouselSlideSchema(BaseModel):
 class CarouselSchema(BaseModel):
     format: str = Field("CAROUSEL", validation_alias=AliasChoices("format", "formato"))
     title: str = Field("Carrossel Koala Tênis", validation_alias=AliasChoices("title", "titulo", "tema"))
-    cover_hook: str = Field(..., validation_alias=AliasChoices("cover_hook", "gancho_capa", "capa", "hook"))
+    cover_hook: str = Field(default="Arrasta para o lado ➡️", validation_alias=AliasChoices("cover_hook", "gancho_capa", "capa", "hook", "title", "titulo"))
     slides: List[CarouselSlideSchema] = Field(default_factory=list, validation_alias=AliasChoices("slides", "slides_educativos"))
     caption: str = Field(default="", validation_alias=AliasChoices("caption", "legenda", "texto"))
     hashtags: List[str] = Field(default_factory=list, validation_alias=AliasChoices("hashtags", "tags"))
@@ -75,13 +75,15 @@ Seu papel é criar conteúdos com altíssima retenção, ganchos magnéticos e e
 DIRETRIZES FUNDAMENTAIS:
 1. Respeite as características do formato solicitado:
    - REELS: Vídeo 9:16 com gancho forte nos primeiros segundos. Você DEVE fornecer o `audio_script` completo, o `main_visual_prompt` em inglês (para a IA de vídeo gerar uma cena contínua de alta qualidade) e a lista de `scenes` sincronizadas.
-   - STORIES: Comunicação rápida, informal e com sugestão de adesivos interativos.
-   - FEED: Imagem única marcante com legenda profunda e educativa.
-   - CAROUSEL: Conteúdo em etapas lógicas, didático e de alto valor prático para salvar.
-2. O foco da Koala Tênis é empoderar tenistas e entusiastas a melhorarem seu jogo e criarem sua própria máquina lançadora de bolas DIY com engenharia acessível.
-3. Responda ESTRITAMENTE em formato JSON com chaves em inglês:
+   - STORIES: Comunicação rápida, informal e com sugestão de adesivos interativos. Forneça `title`, `hook`, `body` (resumo claro da notícia/tema) e `call_to_action`.
+   - FEED: Imagem única marcante com legenda profunda e educativa. Forneça `title`, `headline`, `caption` e `cta`.
+   - CAROUSEL: Conteúdo em etapas lógicas, didático e de alto valor prático para salvar. Forneça `title`, `cover_hook`, `slides` (com `slide_title` e `slide_body`) e `caption`.
+2. Responda ESTRITAMENTE em formato JSON com chaves em inglês conforme o formato:
    Para REELS: {"format": "REELS", "title": "...", "hook": "...", "objective": "...", "audio_script": "...", "main_visual_prompt": "...", "script": "...", "scenes": [{"scene_number": 1, "duration": 4, "description": "...", "visual_prompt": "...", "narration": "..."}], "caption": "...", "hashtags": ["..."], "cta": "..."}
-4. NUNCA invente preços ou promessas que violem a lista de restrições ("avoid") da marca.
+   Para STORIES: {"format": "STORIES", "title": "...", "hook": "...", "body": "...", "stickers_recommended": ["..."], "visual_prompt": "...", "call_to_action": "..."}
+   Para FEED: {"format": "FEED", "title": "...", "headline": "...", "visual_prompt": "...", "caption": "...", "hashtags": ["..."], "cta": "..."}
+   Para CAROUSEL: {"format": "CAROUSEL", "title": "...", "cover_hook": "...", "slides": [{"slide_number": 1, "slide_title": "...", "slide_body": "...", "visual_prompt": "..."}], "caption": "...", "hashtags": ["..."], "cta": "..."}
+3. NUNCA invente preços ou promessas que violem a lista de restrições ("avoid") da marca.
 """
 
 

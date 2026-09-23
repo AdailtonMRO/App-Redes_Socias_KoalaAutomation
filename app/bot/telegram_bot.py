@@ -51,7 +51,14 @@ class TelegramBotService:
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 resp = await client.post(url, json=payload)
-                return resp.status_code == 200
+                if resp.status_code == 200:
+                    return True
+                print(f"[WARN] Erro ao enviar mensagem Telegram ({resp.status_code}): {resp.text}")
+                if parse_mode and ("can't parse entities" in resp.text.lower() or resp.status_code == 400):
+                    payload.pop("parse_mode", None)
+                    resp_retry = await client.post(url, json=payload)
+                    return resp_retry.status_code == 200
+                return False
         except Exception as e:
             print(f"[WARN] Erro ao enviar mensagem no Telegram: {e}")
             return False
@@ -136,7 +143,16 @@ class TelegramBotService:
                 with open(file_path, "rb") as f:
                     files = {"photo": (file_path.name, f, "image/jpeg")}
                     resp = await client.post(url, data=data, files=files)
-                    return resp.status_code == 200
+                    if resp.status_code == 200:
+                        return True
+                    print(f"[WARN] Erro ao enviar foto Telegram ({resp.status_code}): {resp.text}")
+                    if "can't parse entities" in resp.text.lower() and "parse_mode" in data:
+                        data_retry = {k: v for k, v in data.items() if k != "parse_mode"}
+                        f.seek(0)
+                        files_retry = {"photo": (file_path.name, f, "image/jpeg")}
+                        resp_retry = await client.post(url, data=data_retry, files=files_retry)
+                        return resp_retry.status_code == 200
+                    return False
         except Exception as e:
             print(f"[WARN] Erro ao enviar foto no Telegram: {e}")
             return False
